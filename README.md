@@ -168,6 +168,7 @@ docker compose down
 - `docs/ARCHITECTURE.md`
 - `docs/TEST_MODE.md`
 - `docs/DEMO.md`
+- `docs/BACKEND_CHECKLIST.md`
 
 ## Важное про финансы
 
