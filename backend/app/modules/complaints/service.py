@@ -67,6 +67,12 @@ class ComplaintService:
 
         return complaint
 
+    def list_all(self, status: ComplaintStatus | None = None) -> list[Complaint]:
+        if status is None:
+            return self.complaints.list_all()
+
+        return self.complaints.list_by_status(status)
+
     def list_my(self, current_user: User) -> list[Complaint]:
         return self.complaints.list_my(current_user.id)
 

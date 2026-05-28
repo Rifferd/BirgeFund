@@ -15,6 +15,12 @@ class ProjectReportService:
         self.projects = ProjectRepository(db)
         self.reports = ProjectReportRepository(db)
 
+    def list_all(self, status: ReportStatus | None = None) -> list[ProjectReport]:
+        if status is None:
+            return self.reports.list_all()
+
+        return self.reports.list_by_status(status)
+
     def list_public_by_project(self, project_id: int) -> list[ProjectReport]:
         project = self.projects.get_by_id(project_id)
 

@@ -16,6 +16,18 @@ class ComplaintRepository:
         statement = select(Complaint).where(Complaint.id == complaint_id)
         return self.db.scalar(statement)
 
+    def list_all(self) -> list[Complaint]:
+        statement = select(Complaint).order_by(Complaint.created_at.desc(), Complaint.id.desc())
+        return list(self.db.scalars(statement).all())
+
+    def list_by_status(self, status: ComplaintStatus) -> list[Complaint]:
+        statement = (
+            select(Complaint)
+            .where(Complaint.status == status)
+            .order_by(Complaint.created_at.desc(), Complaint.id.desc())
+        )
+        return list(self.db.scalars(statement).all())
+
     def list_my(self, reporter_id: int) -> list[Complaint]:
         statement = (
             select(Complaint)

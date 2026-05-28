@@ -299,3 +299,49 @@ class AdminAuditLogService:
 
     def get_log(self, audit_log_id: int) -> AuditLog:
         return self.audit.get_by_id(audit_log_id)
+
+
+from app.modules.complaints.model import Complaint
+from app.modules.complaints.schema import ComplaintModerationRequest
+from app.modules.complaints.service import ComplaintService
+from app.modules.reports.model import ProjectReport
+from app.modules.reports.schema import ProjectReportModerationRequest
+from app.modules.reports.service import ProjectReportService
+from app.shared.enums import ComplaintStatus, ReportStatus
+
+
+class AdminModerationService:
+    def __init__(self, db: Session) -> None:
+        self.reports = ProjectReportService(db)
+        self.complaints = ComplaintService(db)
+
+    def list_reports(self, status: ReportStatus | None = None) -> list[ProjectReport]:
+        return self.reports.list_all(status=status)
+
+    def moderate_report(
+        self,
+        *,
+        report_id: int,
+        payload: ProjectReportModerationRequest,
+    ) -> ProjectReport:
+        return self.reports.moderate(
+            report_id=report_id,
+            status=payload.status,
+            moderator_comment=payload.moderator_comment,
+        )
+
+    def list_complaints(self, status: ComplaintStatus | None = None) -> list[Complaint]:
+        return self.complaints.list_all(status=status)
+
+    def moderate_complaint(
+        self,
+        *,
+        complaint_id: int,
+        current_user: User,
+        payload: ComplaintModerationRequest,
+    ) -> Complaint:
+        return self.complaints.moderate(
+            complaint_id=complaint_id,
+            current_user=current_user,
+            data=payload,
+        )

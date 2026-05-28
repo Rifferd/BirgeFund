@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_database_session
 from app.core.permissions import Permissions, require_any_permission, require_permission
 from app.modules.audit.schema import AuditLogRead
+from app.modules.complaints.schema import ComplaintModerationRequest, ComplaintRead
+from app.modules.reports.schema import ProjectReportModerationRequest, ProjectReportRead
 from app.modules.admin.schema import (
     AdminDashboardStats,
     AdminUserBlockRequest,
@@ -14,6 +16,7 @@ from app.modules.admin.service import (
     AdminAuditLogService,
     AdminDashboardService,
     AdminFinanceService,
+    AdminModerationService,
     AdminProjectService,
     AdminUserService,
 )
@@ -22,7 +25,7 @@ from app.modules.payments.schema import PaymentAttemptRead
 from app.modules.projects.schema import ProjectRead, ProjectStatusChangeRequest
 from app.modules.refunds.schema import RefundCreateRequest, RefundRead
 from app.modules.users.model import User
-from app.shared.enums import ProjectStatus
+from app.shared.enums import ComplaintStatus, ProjectStatus, ReportStatus
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -243,3 +246,53 @@ def get_admin_audit_log(
 ) -> AuditLogRead:
     service = AdminAuditLogService(db)
     return service.get_log(audit_log_id)
+
+
+
+@router.get("/reports", response_model=list[ProjectReportRead])
+def list_admin_reports(
+    status: ReportStatus | None = Query(default=None),
+    current_user: User = Depends(require_permission(Permissions.REPORTS_MODERATE)),
+    db: Session = Depends(get_database_session),
+) -> list[ProjectReportRead]:
+    service = AdminModerationService(db)
+    return service.list_reports(status=status)
+
+
+@router.patch("/reports/{report_id}/status", response_model=ProjectReportRead)
+def moderate_admin_report(
+    report_id: int,
+    payload: ProjectReportModerationRequest,
+    current_user: User = Depends(require_permission(Permissions.REPORTS_MODERATE)),
+    db: Session = Depends(get_database_session),
+) -> ProjectReportRead:
+    service = AdminModerationService(db)
+    return service.moderate_report(
+        report_id=report_id,
+        payload=payload,
+    )
+
+
+@router.get("/complaints", response_model=list[ComplaintRead])
+def list_admin_complaints(
+    status: ComplaintStatus | None = Query(default=None),
+    current_user: User = Depends(require_permission(Permissions.COMPLAINTS_MANAGE)),
+    db: Session = Depends(get_database_session),
+) -> list[ComplaintRead]:
+    service = AdminModerationService(db)
+    return service.list_complaints(status=status)
+
+
+@router.patch("/complaints/{complaint_id}/status", response_model=ComplaintRead)
+def moderate_admin_complaint(
+    complaint_id: int,
+    payload: ComplaintModerationRequest,
+    current_user: User = Depends(require_permission(Permissions.COMPLAINTS_MANAGE)),
+    db: Session = Depends(get_database_session),
+) -> ComplaintRead:
+    service = AdminModerationService(db)
+    return service.moderate_complaint(
+        complaint_id=complaint_id,
+        current_user=current_user,
+        payload=payload,
+    )

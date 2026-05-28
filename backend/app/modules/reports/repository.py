@@ -16,6 +16,18 @@ class ProjectReportRepository:
         statement = select(ProjectReport).where(ProjectReport.id == report_id)
         return self.db.scalar(statement)
 
+    def list_all(self) -> list[ProjectReport]:
+        statement = select(ProjectReport).order_by(ProjectReport.created_at.desc(), ProjectReport.id.desc())
+        return list(self.db.scalars(statement).all())
+
+    def list_by_status(self, status: ReportStatus) -> list[ProjectReport]:
+        statement = (
+            select(ProjectReport)
+            .where(ProjectReport.status == status)
+            .order_by(ProjectReport.created_at.desc(), ProjectReport.id.desc())
+        )
+        return list(self.db.scalars(statement).all())
+
     def list_public_by_project(self, project_id: int) -> list[ProjectReport]:
         statement = (
             select(ProjectReport)
