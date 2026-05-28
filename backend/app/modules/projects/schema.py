@@ -60,6 +60,32 @@ class ProjectStatusChangeRequest(BaseSchema):
     reason: str | None = Field(default=None, max_length=1000)
 
 
+class ProjectUpdateItemCreate(BaseSchema):
+    language: str = Field(default="ru", max_length=10)
+    title: str = Field(min_length=3, max_length=255)
+    text: str = Field(min_length=10)
+    is_public: bool = True
+
+
+class ProjectUpdateItemUpdate(BaseSchema):
+    language: str | None = Field(default=None, max_length=10)
+    title: str | None = Field(default=None, min_length=3, max_length=255)
+    text: str | None = Field(default=None, min_length=10)
+    is_public: bool | None = None
+
+
+class ProjectUpdateItemRead(BaseSchema):
+    id: int
+    project_id: int
+    author_id: int
+    language: str
+    title: str
+    text: str
+    is_public: bool
+    created_at: datetime
+    updated_at: datetime | None
+
+
 class ProjectRead(ProjectBase):
     id: int
     author_id: int

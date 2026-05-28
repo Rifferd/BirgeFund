@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException, PermissionDeniedException
 from app.modules.audit.service import AuditLogService
-from app.modules.projects.model import Project
+from app.modules.projects.model import Project, ProjectUpdateItem
 from app.modules.projects.repository import ProjectRepository
-from app.modules.projects.schema import ProjectCreate, ProjectTranslationCreate, ProjectUpdate
+from app.modules.projects.schema import ProjectCreate, ProjectTranslationCreate, ProjectUpdate, ProjectUpdateItemCreate
 from app.modules.users.model import User
 from app.shared.enums import ProjectStatus, ProjectType
 
@@ -223,6 +223,59 @@ class ProjectService:
             actor=current_user,
             reason=reason,
         )
+
+
+    def list_public_updates(self, project_id: int) -> list[ProjectUpdateItem]:
+        project = self.get_by_id(project_id)
+
+        public_statuses = {
+            ProjectStatus.FUNDRAISING,
+            ProjectStatus.FUNDED,
+            ProjectStatus.IN_PROGRESS,
+            ProjectStatus.COMPLETED,
+        }
+
+        if project.status not in public_statuses:
+            raise NotFoundException("Проект не найден")
+
+        return self.projects.list_public_updates(project_id)
+
+    def list_my_project_updates(self, project_id: int, current_user: User) -> list[ProjectUpdateItem]:
+        project = self.get_by_id(project_id)
+
+        if project.author_id != current_user.id:
+            raise PermissionDeniedException("Можно смотреть только новости своих проектов")
+
+        return self.projects.list_updates_for_author(project_id)
+
+    def create_update(
+        self,
+        *,
+        project_id: int,
+        current_user: User,
+        data: ProjectUpdateItemCreate,
+    ) -> ProjectUpdateItem:
+        project = self.get_by_id(project_id)
+
+        if project.author_id != current_user.id:
+            raise PermissionDeniedException("Можно добавлять новости только к своим проектам")
+
+        if project.status in [ProjectStatus.CANCELLED, ProjectStatus.FAILED]:
+            raise BadRequestException("Нельзя добавлять новости к отменённому или проваленному проекту")
+
+        project_update = self.projects.create_update(
+            project_id=project.id,
+            author_id=current_user.id,
+            language=data.language,
+            title=data.title,
+            text=data.text,
+            is_public=data.is_public,
+        )
+
+        self.db.commit()
+        self.db.refresh(project_update)
+
+        return project_update
 
     def _validate_project_ready_for_review(self, project: Project) -> None:
         if project.project_type == ProjectType.INVESTMENT_DISABLED:

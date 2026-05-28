@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_database_session
 from app.core.permissions import Permissions, require_any_permission
-from app.modules.projects.schema import ProjectCreate, ProjectRead, ProjectStatusChangeRequest, ProjectUpdate
+from app.modules.projects.schema import ProjectCreate, ProjectRead, ProjectStatusChangeRequest, ProjectUpdate, ProjectUpdateItemCreate, ProjectUpdateItemRead
 from app.modules.projects.service import ProjectService
 from app.modules.users.model import User
 
@@ -71,6 +71,44 @@ def change_project_status(
         new_status=payload.status,
         current_user=current_user,
         reason=payload.reason,
+    )
+
+
+@router.get("/{project_id}/updates", response_model=list[ProjectUpdateItemRead])
+def list_project_updates(
+    project_id: int,
+    db: Session = Depends(get_database_session),
+) -> list[ProjectUpdateItemRead]:
+    service = ProjectService(db)
+    return service.list_public_updates(project_id)
+
+
+@router.get("/{project_id}/updates/my", response_model=list[ProjectUpdateItemRead])
+def list_my_project_updates(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database_session),
+) -> list[ProjectUpdateItemRead]:
+    service = ProjectService(db)
+    return service.list_my_project_updates(project_id, current_user)
+
+
+@router.post(
+    "/{project_id}/updates",
+    response_model=ProjectUpdateItemRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_project_update(
+    project_id: int,
+    payload: ProjectUpdateItemCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database_session),
+) -> ProjectUpdateItemRead:
+    service = ProjectService(db)
+    return service.create_update(
+        project_id=project_id,
+        current_user=current_user,
+        data=payload,
     )
 
 

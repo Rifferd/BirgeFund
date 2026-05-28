@@ -98,6 +98,12 @@ class Project(Base):
         lazy="selectin",
     )
 
+    updates: Mapped[list["ProjectUpdateItem"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
     def __repr__(self) -> str:
         return f"Project(id={self.id!r}, slug={self.slug!r}, status={self.status!r})"
 
@@ -147,3 +153,49 @@ class ProjectTranslation(Base):
 
     def __repr__(self) -> str:
         return f"ProjectTranslation(project_id={self.project_id!r}, language={self.language!r})"
+
+
+class ProjectUpdateItem(Base):
+    __tablename__ = "project_updates"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    author_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+
+    language: Mapped[str] = mapped_column(String(10), nullable=False, default="ru", index=True)
+
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+
+    is_public: Mapped[bool] = mapped_column(nullable=False, default=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        onupdate=func.now(),
+    )
+
+    project: Mapped[Project] = relationship(
+        back_populates="updates",
+        lazy="selectin",
+    )
+
+    author: Mapped["User"] = relationship(lazy="selectin")
+
+    def __repr__(self) -> str:
+        return f"ProjectUpdateItem(id={self.id!r}, project_id={self.project_id!r})"
