@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException, PermissionDeniedException
 from app.modules.audit.service import AuditLogService
+from app.modules.ledger.service import LedgerService
 from app.modules.projects.model import Project, ProjectUpdateItem
 from app.modules.projects.repository import ProjectRepository
 from app.modules.projects.schema import ProjectCreate, ProjectTranslationCreate, ProjectUpdate, ProjectUpdateItemCreate
@@ -123,12 +124,35 @@ class ProjectService:
         self.db = db
         self.projects = ProjectRepository(db)
         self.status_service = ProjectStatusService(db)
+        self.ledger = LedgerService(db)
+
+
+    def attach_ledger_summary(self, project: Project) -> Project:
+        summary = self.ledger.get_project_summary(project.id)
+
+        project.gross_collected = summary.gross_collected
+        project.net_amount = summary.net_amount
+        project.platform_fee_amount = summary.platform_fee_amount
+        project.refunded_amount = summary.refunded_amount
+
+        if project.goal_amount > 0:
+            progress = int((summary.gross_collected / project.goal_amount) * 100)
+            project.progress_percent = min(progress, 100)
+        else:
+            project.progress_percent = 0
+
+        return project
+
+    def attach_ledger_summary_to_list(self, projects: list[Project]) -> list[Project]:
+        return [self.attach_ledger_summary(project) for project in projects]
 
     def list_public(self) -> list[Project]:
-        return self.projects.list_public()
+        projects = self.projects.list_public()
+        return self.attach_ledger_summary_to_list(projects)
 
     def list_my_projects(self, current_user: User) -> list[Project]:
-        return self.projects.list_by_author(current_user.id)
+        projects = self.projects.list_by_author(current_user.id)
+        return self.attach_ledger_summary_to_list(projects)
 
     def get_by_slug(self, slug: str) -> Project:
         project = self.projects.get_by_slug(slug)
@@ -136,7 +160,7 @@ class ProjectService:
         if project is None:
             raise NotFoundException("Проект не найден")
 
-        return project
+        return self.attach_ledger_summary(project)
 
     def get_by_id(self, project_id: int) -> Project:
         project = self.projects.get_by_id(project_id)
@@ -144,7 +168,7 @@ class ProjectService:
         if project is None:
             raise NotFoundException("Проект не найден")
 
-        return project
+        return self.attach_ledger_summary(project)
 
     def create_draft(self, current_user: User, data: ProjectCreate) -> Project:
         if data.project_type == ProjectType.INVESTMENT_DISABLED:
@@ -163,7 +187,7 @@ class ProjectService:
         self.db.commit()
         self.db.refresh(project)
 
-        return project
+        return self.attach_ledger_summary(project)
 
     def update_draft(self, project_id: int, current_user: User, data: ProjectUpdate) -> Project:
         project = self.get_by_id(project_id)
@@ -190,7 +214,7 @@ class ProjectService:
         self.db.commit()
         self.db.refresh(project)
 
-        return project
+        return self.attach_ledger_summary(project)
 
     def submit_to_review(self, project_id: int, current_user: User) -> Project:
         project = self.get_by_id(project_id)
@@ -200,12 +224,14 @@ class ProjectService:
 
         self._validate_project_ready_for_review(project)
 
-        return self.status_service.change_status(
+        project = self.status_service.change_status(
             project=project,
             new_status=ProjectStatus.PENDING_REVIEW,
             actor=current_user,
             reason="Автор отправил проект на модерацию",
         )
+
+        return self.attach_ledger_summary(project)
 
     def change_status(
         self,
@@ -217,12 +243,14 @@ class ProjectService:
     ) -> Project:
         project = self.get_by_id(project_id)
 
-        return self.status_service.change_status(
+        project = self.status_service.change_status(
             project=project,
             new_status=new_status,
             actor=current_user,
             reason=reason,
         )
+
+        return self.attach_ledger_summary(project)
 
 
     def list_public_updates(self, project_id: int) -> list[ProjectUpdateItem]:

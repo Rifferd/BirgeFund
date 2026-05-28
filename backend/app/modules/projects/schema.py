@@ -93,6 +93,13 @@ class ProjectRead(ProjectBase):
     cover_image_id: int | None
     rejection_reason: str | None
     frozen_reason: str | None
+
+    gross_collected: Decimal = Decimal("0.00")
+    net_amount: Decimal = Decimal("0.00")
+    platform_fee_amount: Decimal = Decimal("0.00")
+    refunded_amount: Decimal = Decimal("0.00")
+    progress_percent: int = 0
+
     created_at: datetime
     updated_at: datetime | None
     submitted_at: datetime | None
