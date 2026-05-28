@@ -1,4 +1,19 @@
-import type { AdminDashboardStats, AdminProject, AdminProjectsQueryParams, AdminProjectStatusUpdateRequest, AdminUser, AdminUsersQueryParams, AdminUserBlockRequest, AdminUserUpdateRequest } from "@/features/admin/api/adminTypes";
+import type {
+  AdminDashboardStats,
+  AdminLedgerEntry,
+  AdminLedgerSummary,
+  AdminPayment,
+  AdminPaymentsQueryParams,
+  AdminProject,
+  AdminProjectsQueryParams,
+  AdminProjectStatusUpdateRequest,
+  AdminRefund,
+  AdminRefundCreateRequest,
+  AdminUser,
+  AdminUserBlockRequest,
+  AdminUsersQueryParams,
+  AdminUserUpdateRequest,
+} from "@/features/admin/api/adminTypes";
 import { apiClient, endpoints } from "@/shared/api";
 import { normalizeApiList } from "@/shared/lib/apiList";
 
@@ -26,7 +41,6 @@ export function updateAdminProjectStatus(
     payload,
   );
 }
-
 
 export async function getAdminUsers(params?: AdminUsersQueryParams) {
   const payload = await apiClient.get<AdminUser[] | { items: AdminUser[] }>(
@@ -67,4 +81,47 @@ export function unblockAdminUser(
     endpoints.admin.userUnblock(userId),
     payload,
   );
+}
+
+export async function getAdminPayments(params?: AdminPaymentsQueryParams) {
+  const payload = await apiClient.get<AdminPayment[] | { items: AdminPayment[] }>(
+    endpoints.admin.payments,
+    {
+      params,
+    },
+  );
+
+  return normalizeApiList(payload);
+}
+
+export function createAdminRefund(
+  paymentId: number | string,
+  payload: AdminRefundCreateRequest,
+) {
+  return apiClient.post<AdminRefund, AdminRefundCreateRequest>(
+    endpoints.admin.paymentRefund(paymentId),
+    payload,
+  );
+}
+
+export async function getAdminProjectLedger(projectId: number | string) {
+  const payload = await apiClient.get<AdminLedgerEntry[] | { items: AdminLedgerEntry[] }>(
+    endpoints.admin.projectLedger(projectId),
+  );
+
+  return normalizeApiList(payload);
+}
+
+export function getAdminProjectLedgerSummary(projectId: number | string) {
+  return apiClient.get<AdminLedgerSummary>(
+    endpoints.admin.projectLedgerSummary(projectId),
+  );
+}
+
+export async function getAdminRefunds() {
+  const payload = await apiClient.get<AdminRefund[] | { items: AdminRefund[] }>(
+    endpoints.admin.refunds,
+  );
+
+  return normalizeApiList(payload);
 }

@@ -8,6 +8,9 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AdminProjectsPage } from "@/pages/admin/AdminProjectsPage";
+import { AdminPaymentsPage } from "@/pages/admin/AdminPaymentsPage";
+import { AdminLedgerPage } from "@/pages/admin/AdminLedgerPage";
+import { AdminRefundsPage } from "@/pages/admin/AdminRefundsPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AuthorHomePage } from "@/pages/author/AuthorHomePage";
 import { AuthorProjectsPage } from "@/pages/author/AuthorProjectsPage";
@@ -119,6 +122,18 @@ export const router = createBrowserRouter([
       {
         path: "projects",
         element: <AdminProjectsPage />,
+      },
+      {
+        path: "payments",
+        element: <AdminPaymentsPage />,
+      },
+      {
+        path: "ledger",
+        element: <AdminLedgerPage />,
+      },
+      {
+        path: "refunds",
+        element: <AdminRefundsPage />,
       },
     ],
   },

@@ -29,6 +29,7 @@ const adminNavItems = [
   { to: "/admin/projects", label: "Projects", icon: FileText },
   { to: "/admin/payments", label: "Payments", icon: WalletCards },
   { to: "/admin/ledger", label: "Ledger", icon: ReceiptText },
+  { to: "/admin/refunds", label: "Refunds", icon: ReceiptText },
   { to: "/admin/reports", label: "Reports", icon: ShieldCheck },
   { to: "/admin/complaints", label: "Complaints", icon: Flag },
   { to: "/admin/cms", label: "CMS pages", icon: FileText },
