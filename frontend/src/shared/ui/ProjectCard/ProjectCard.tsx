@@ -2,7 +2,7 @@ import { MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import type { Project } from "@/entities/project/types";
-import { routes } from "@/shared/config/routes";
+import { buildProjectUrl } from "@/shared/config/routes";
 import { formatDate } from "@/shared/lib/formatDate";
 import { formatMoney } from "@/shared/lib/formatMoney";
 import { getTranslation } from "@/shared/lib/getTranslation";
@@ -41,10 +41,6 @@ function getStatusTone(status: string) {
   return "slate";
 }
 
-function getProjectUrl(slug: string) {
-  return routes.projectDetail.replace(":slug", slug);
-}
-
 export function ProjectCard({ project, language }: ProjectCardProps) {
   const translation = getTranslation(project.translations, language);
   const title = translation?.title ?? "Проект без названия";
@@ -59,7 +55,7 @@ export function ProjectCard({ project, language }: ProjectCardProps) {
         : 0;
 
   return (
-    <Link to={getProjectUrl(project.slug)} className="block h-full">
+    <Link to={buildProjectUrl(project.slug)} className="block h-full">
       <Card className="h-full overflow-hidden transition hover:-translate-y-1 hover:shadow-xl">
         <div className="flex h-44 items-center justify-center bg-gradient-to-br from-emerald-100 to-amber-100 dark:from-emerald-950/40 dark:to-amber-950/30">
           <span className="px-5 text-center text-xl font-black text-emerald-800 dark:text-emerald-100">

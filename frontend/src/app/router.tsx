@@ -11,6 +11,7 @@ import { DashboardHomePage } from "@/pages/dashboard/DashboardHomePage";
 import { HomePage } from "@/pages/public/HomePage";
 import { ProjectDetailPage } from "@/pages/public/ProjectDetailPage";
 import { ProjectsPage } from "@/pages/public/ProjectsPage";
+import { SupportProjectPage } from "@/pages/public/SupportProjectPage";
 import { routes } from "@/shared/config/routes";
 
 export const router = createBrowserRouter([
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: routes.projects,
         element: <ProjectsPage />,
+      },
+      {
+        path: routes.supportProject,
+        element: <SupportProjectPage />,
       },
       {
         path: routes.projectDetail,
