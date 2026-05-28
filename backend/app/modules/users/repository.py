@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -39,3 +41,11 @@ class UserRepository:
 
     def exists_by_email(self, email: str) -> bool:
         return self.get_by_email(email) is not None
+
+    def update_last_login(self, user: User) -> User:
+        user.last_login_at = datetime.now(UTC)
+        self.db.add(user)
+        self.db.flush()
+        self.db.refresh(user)
+
+        return user

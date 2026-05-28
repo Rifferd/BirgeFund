@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import ConflictException
+from app.core.exceptions import ConflictException, UnauthorizedException
 from app.core.security import hash_password, verify_password
 from app.modules.users.model import User
 from app.modules.users.repository import UserRepository
@@ -28,6 +28,25 @@ class AuthService:
             full_name=data.full_name,
             preferred_language=data.preferred_language,
         )
+
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user
+
+    def authenticate(self, email: str, password: str) -> User:
+        user = self.users.get_by_email(email)
+
+        if user is None:
+            raise UnauthorizedException()
+
+        if not self.verify_password(password, user.password_hash):
+            raise UnauthorizedException()
+
+        if not user.is_active or user.is_blocked:
+            raise UnauthorizedException("Пользователь заблокирован или неактивен")
+
+        user = self.users.update_last_login(user)
 
         self.db.commit()
         self.db.refresh(user)

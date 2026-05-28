@@ -35,6 +35,15 @@ class PermissionDeniedException(AppException):
         )
 
 
+class UnauthorizedException(AppException):
+    def __init__(self, detail: str = "Неверный email или пароль") -> None:
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=detail,
+            code="UNAUTHORIZED",
+        )
+
+
 class BadRequestException(AppException):
     def __init__(self, detail: str = "Некорректный запрос") -> None:
         super().__init__(
