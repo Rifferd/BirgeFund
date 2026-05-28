@@ -4,6 +4,9 @@ import type {
   AdminCMSPage,
   AdminCMSPageCreateRequest,
   AdminCMSPageUpdateRequest,
+  AdminBanner,
+  AdminBannerCreateRequest,
+  AdminBannerUpdateRequest,
   AdminComplaintStatusUpdateRequest,
   AdminDashboardStats,
   AdminLedgerEntry,
@@ -196,9 +199,38 @@ export function createAdminCMSPage(payload: AdminCMSPageCreateRequest) {
 export function updateAdminCMSPage(
   pageId: number | string,
   payload: AdminCMSPageUpdateRequest,
+  AdminBanner,
+  AdminBannerCreateRequest,
+  AdminBannerUpdateRequest,
 ) {
   return apiClient.patch<AdminCMSPage, AdminCMSPageUpdateRequest>(
     endpoints.admin.cmsPage(pageId),
+    payload,
+  );
+}
+
+
+export async function getAdminBanners() {
+  const payload = await apiClient.get<AdminBanner[] | { items: AdminBanner[] }>(
+    endpoints.admin.banners,
+  );
+
+  return normalizeApiList(payload);
+}
+
+export function createAdminBanner(payload: AdminBannerCreateRequest) {
+  return apiClient.post<AdminBanner, AdminBannerCreateRequest>(
+    endpoints.admin.banners,
+    payload,
+  );
+}
+
+export function updateAdminBanner(
+  bannerId: number | string,
+  payload: AdminBannerUpdateRequest,
+) {
+  return apiClient.patch<AdminBanner, AdminBannerUpdateRequest>(
+    endpoints.admin.banner(bannerId),
     payload,
   );
 }

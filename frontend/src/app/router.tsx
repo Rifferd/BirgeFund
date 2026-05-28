@@ -14,6 +14,7 @@ import { AdminRefundsPage } from "@/pages/admin/AdminRefundsPage";
 import { AdminReportsPage } from "@/pages/admin/AdminReportsPage";
 import { AdminComplaintsPage } from "@/pages/admin/AdminComplaintsPage";
 import { AdminCMSPagesPage } from "@/pages/admin/AdminCMSPagesPage";
+import { AdminBannersPage } from "@/pages/admin/AdminBannersPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AuthorHomePage } from "@/pages/author/AuthorHomePage";
 import { AuthorProjectsPage } from "@/pages/author/AuthorProjectsPage";
@@ -149,6 +150,10 @@ export const router = createBrowserRouter([
       {
         path: "cms",
         element: <AdminCMSPagesPage />,
+      },
+      {
+        path: "banners",
+        element: <AdminBannersPage />,
       },
     ],
   },

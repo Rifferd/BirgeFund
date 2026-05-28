@@ -174,3 +174,49 @@ export type AdminCMSPageUpdateRequest = Partial<AdminCMSPageCreateRequest> & {
   status?: string;
   is_published?: boolean;
 };
+
+
+export type AdminBannerTranslation = {
+  id?: number;
+  banner_id?: number;
+  language: "ru" | "kg" | "en" | string;
+  title: string;
+  subtitle?: string | null;
+  cta_text?: string | null;
+  created_at?: string;
+  updated_at?: string | null;
+};
+
+export type AdminBanner = {
+  id: number;
+  slug: string;
+  placement: string;
+  image_file_id?: number | null;
+  link_url?: string | null;
+  sort_order: number;
+  is_active: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  created_at?: string;
+  updated_at?: string | null;
+  translations: AdminBannerTranslation[];
+};
+
+export type AdminBannerCreateRequest = {
+  slug: string;
+  placement: string;
+  image_file_id?: number | null;
+  link_url?: string | null;
+  sort_order: number;
+  is_active: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  translations: Array<{
+    language: "ru" | "kg" | "en";
+    title: string;
+    subtitle?: string | null;
+    cta_text?: string | null;
+  }>;
+};
+
+export type AdminBannerUpdateRequest = Partial<AdminBannerCreateRequest>;
