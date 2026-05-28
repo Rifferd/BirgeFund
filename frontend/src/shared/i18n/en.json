@@ -1,0 +1,34 @@
+{
+  "app": {
+    "name": "BirgeFund",
+    "tagline": "Crowdfunding for Kyrgyzstan · test mode"
+  },
+  "navigation": {
+    "home": "Home",
+    "projects": "Projects",
+    "login": "Login",
+    "register": "Register",
+    "dashboard": "Dashboard",
+    "admin": "Admin",
+    "createProject": "Create project"
+  },
+  "testMode": {
+    "title": "Test mode",
+    "description": "No real money is charged. All operations are only for platform demonstration."
+  },
+  "pages": {
+    "homeTitle": "Support meaningful projects in Kyrgyzstan",
+    "homeDescription": "A platform for social, educational, creative and small business projects. Supporting a project is not an investment.",
+    "projectsTitle": "Project catalog",
+    "loginTitle": "Login",
+    "registerTitle": "Create account",
+    "dashboardTitle": "Dashboard",
+    "authorTitle": "Author dashboard",
+    "adminTitle": "Admin panel"
+  },
+  "actions": {
+    "openProjects": "View projects",
+    "switchTheme": "Switch theme",
+    "switchLanguage": "Switch language"
+  }
+}
