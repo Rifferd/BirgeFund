@@ -15,3 +15,5 @@ export { Tabs } from "./Tabs/Tabs";
 export { Table } from "./Table/Table";
 export { Pagination } from "./Pagination/Pagination";
 export { LanguageSwitcher } from "./LanguageSwitcher";
+
+export { ProjectCard } from "./ProjectCard/ProjectCard";
