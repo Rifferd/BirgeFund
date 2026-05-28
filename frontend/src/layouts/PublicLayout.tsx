@@ -36,7 +36,9 @@ export function PublicLayout() {
           </nav>
 
           <div className="hidden items-center gap-2 md:flex">
-            <Button variant="secondary">Войти</Button>
+            <Link to="/login">
+              <Button variant="secondary">Войти</Button>
+            </Link>
             <Button>Создать проект</Button>
           </div>
 
@@ -71,9 +73,9 @@ export function PublicLayout() {
               <Link onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 font-bold hover:bg-slate-100 dark:hover:bg-slate-800" to={routes.projects}>
                 Каталог проектов
               </Link>
-              <button className="rounded-2xl px-4 py-3 text-left font-bold hover:bg-slate-100 dark:hover:bg-slate-800">
+              <Link onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-left font-bold hover:bg-slate-100 dark:hover:bg-slate-800" to="/login">
                 Войти
-              </button>
+              </Link>
               <button className="rounded-2xl bg-primary px-4 py-3 text-left font-bold text-white">
                 Создать проект
               </button>
