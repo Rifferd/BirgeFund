@@ -40,6 +40,16 @@ def create_project(
     return service.create_draft(current_user, payload)
 
 
+@router.post("/{project_id}/submit-review", response_model=ProjectRead)
+def submit_project_to_review(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database_session),
+) -> ProjectRead:
+    service = ProjectService(db)
+    return service.submit_to_review(project_id, current_user)
+
+
 @router.get("/{slug}", response_model=ProjectRead)
 def get_project_by_slug(
     slug: str,

@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -22,7 +24,16 @@ class ProjectRepository:
     def list_public(self) -> list[Project]:
         statement = (
             select(Project)
-            .where(Project.status.in_([ProjectStatus.FUNDRAISING, ProjectStatus.FUNDED, ProjectStatus.IN_PROGRESS, ProjectStatus.COMPLETED]))
+            .where(
+                Project.status.in_(
+                    [
+                        ProjectStatus.FUNDRAISING,
+                        ProjectStatus.FUNDED,
+                        ProjectStatus.IN_PROGRESS,
+                        ProjectStatus.COMPLETED,
+                    ]
+                )
+            )
             .order_by(Project.created_at.desc())
         )
         return list(self.db.scalars(statement).all())
@@ -80,6 +91,17 @@ class ProjectRepository:
 
         if data.category_ids is not None:
             project.categories = self._get_categories_by_ids(data.category_ids)
+
+        self.db.add(project)
+        self.db.flush()
+        self.db.refresh(project)
+
+        return project
+
+    def submit_to_review(self, project: Project) -> Project:
+        project.status = ProjectStatus.PENDING_REVIEW
+        project.submitted_at = datetime.now(UTC)
+        project.rejection_reason = None
 
         self.db.add(project)
         self.db.flush()

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException, PermissionDeniedException
 from app.modules.projects.model import Project
 from app.modules.projects.repository import ProjectRepository
-from app.modules.projects.schema import ProjectCreate, ProjectUpdate
+from app.modules.projects.schema import ProjectCreate, ProjectTranslationCreate, ProjectUpdate
 from app.modules.users.model import User
 from app.shared.enums import ProjectStatus, ProjectType
 
@@ -81,7 +81,50 @@ class ProjectService:
 
         return project
 
-    def _validate_translations(self, translations: list) -> None:
+    def submit_to_review(self, project_id: int, current_user: User) -> Project:
+        project = self.get_by_id(project_id)
+
+        if project.author_id != current_user.id:
+            raise PermissionDeniedException("Можно отправлять на модерацию только свои проекты")
+
+        if project.status not in [ProjectStatus.DRAFT, ProjectStatus.REJECTED]:
+            raise BadRequestException("На модерацию можно отправить только черновик или отклонённый проект")
+
+        self._validate_project_ready_for_review(project)
+
+        project = self.projects.submit_to_review(project)
+
+        self.db.commit()
+        self.db.refresh(project)
+
+        return project
+
+    def _validate_project_ready_for_review(self, project: Project) -> None:
+        if project.project_type == ProjectType.INVESTMENT_DISABLED:
+            raise BadRequestException("Инвестиционные проекты отключены в demo-версии")
+
+        if project.goal_amount <= 0:
+            raise BadRequestException("Цель сбора должна быть больше нуля")
+
+        if not project.translations:
+            raise BadRequestException("Нужно добавить хотя бы один перевод проекта")
+
+        languages = [translation.language for translation in project.translations]
+
+        if "ru" not in languages:
+            raise BadRequestException("Русский перевод обязателен")
+
+        for translation in project.translations:
+            if not translation.title.strip():
+                raise BadRequestException("Название проекта обязательно")
+
+            if not translation.short_description.strip():
+                raise BadRequestException("Короткое описание проекта обязательно")
+
+            if not translation.description.strip():
+                raise BadRequestException("Описание проекта обязательно")
+
+    def _validate_translations(self, translations: list[ProjectTranslationCreate]) -> None:
         languages = [translation.language for translation in translations]
 
         if "ru" not in languages:
