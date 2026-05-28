@@ -5,8 +5,13 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir --upgrade pip
+COPY pyproject.toml /app/pyproject.toml
+
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir .
+
+COPY app /app/app
 
 EXPOSE 8000
 
-CMD ["python", "-c", "import time; print('BirgeFund backend container is ready'); time.sleep(10**9)"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
