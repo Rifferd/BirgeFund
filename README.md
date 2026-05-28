@@ -165,6 +165,7 @@ docker compose down
 Основные документы:
 
 - `docs/API.md`
+- `docs/API_QUICK_REFERENCE.md`
 - `docs/ARCHITECTURE.md`
 - `docs/TEST_MODE.md`
 - `docs/DEMO.md`
