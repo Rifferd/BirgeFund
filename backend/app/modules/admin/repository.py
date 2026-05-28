@@ -3,6 +3,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.modules.admin.schema import AdminUserUpdate
 from app.modules.complaints.model import Complaint
 from app.modules.ledger.model import LedgerEntry
 from app.modules.payments.model import PaymentAttempt
@@ -70,3 +71,42 @@ class AdminDashboardRepository:
     def _count(self, model: type) -> int:
         statement = select(func.count(model.id))
         return int(self.db.scalar(statement) or 0)
+
+
+class AdminUserRepository:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def list_users(self) -> list[User]:
+        statement = select(User).order_by(User.created_at.desc(), User.id.desc())
+        return list(self.db.scalars(statement).all())
+
+    def get_by_id(self, user_id: int) -> User | None:
+        statement = select(User).where(User.id == user_id)
+        return self.db.scalar(statement)
+
+    def update_user(self, user: User, data: AdminUserUpdate) -> User:
+        update_data = data.model_dump(exclude_unset=True)
+
+        for field, value in update_data.items():
+            setattr(user, field, value)
+
+        self.db.add(user)
+        self.db.flush()
+        self.db.refresh(user)
+
+        return user
+
+    def set_blocked(self, user: User, is_blocked: bool) -> User:
+        user.is_blocked = is_blocked
+
+        if is_blocked:
+            user.is_active = False
+        else:
+            user.is_active = True
+
+        self.db.add(user)
+        self.db.flush()
+        self.db.refresh(user)
+
+        return user

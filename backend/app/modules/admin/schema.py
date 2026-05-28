@@ -1,4 +1,7 @@
+from datetime import datetime
 from decimal import Decimal
+
+from pydantic import EmailStr, Field
 
 from app.shared.schemas import BaseSchema
 
@@ -25,3 +28,27 @@ class AdminDashboardStats(BaseSchema):
 
     open_complaints: int
     pending_reports: int
+
+
+class AdminUserRead(BaseSchema):
+    id: int
+    email: EmailStr
+    full_name: str | None
+    preferred_language: str
+    is_active: bool
+    is_verified: bool
+    is_blocked: bool
+    last_login_at: datetime | None
+    created_at: datetime
+    updated_at: datetime | None
+
+
+class AdminUserUpdate(BaseSchema):
+    full_name: str | None = Field(default=None, max_length=255)
+    preferred_language: str | None = Field(default=None, max_length=10)
+    is_active: bool | None = None
+    is_verified: bool | None = None
+
+
+class AdminUserBlockRequest(BaseSchema):
+    reason: str | None = Field(default=None, max_length=1000)
