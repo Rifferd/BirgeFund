@@ -10,12 +10,12 @@ BirgeFund — демонстрационная краудфандинговая 
 
 | Роль | Email | Пароль |
 |---|---|---|
-| Super Admin | `admin@birgefund.test` | `AdminPass123!` |
-| Moderator | `moderator@birgefund.test` | `ModeratorPass123!` |
-| Finance Manager | `finance@birgefund.test` | `FinancePass123!` |
-| Content Manager | `content@birgefund.test` | `ContentPass123!` |
-| Author | `author@birgefund.test` | `AuthorPass123!` |
-| Backer | `backer@birgefund.test` | `BackerPass123!` |
+| Super Admin | `admin@birgefund.kg` | `AdminPass123!` |
+| Moderator | `moderator@birgefund.kg` | `ModeratorPass123!` |
+| Finance Manager | `finance@birgefund.kg` | `FinancePass123!` |
+| Content Manager | `content@birgefund.kg` | `ContentPass123!` |
+| Author | `author@birgefund.kg` | `AuthorPass123!` |
+| Backer | `backer@birgefund.kg` | `BackerPass123!` |
 
 ## Быстрый запуск
 
