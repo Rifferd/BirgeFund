@@ -19,3 +19,16 @@ export function confirmMockPayment(payload: ConfirmMockPaymentRequest) {
     payload,
   );
 }
+
+
+export async function getMyPayments() {
+  const payload = await apiClient.get<PaymentAttempt[] | { items: PaymentAttempt[] }>(
+    endpoints.payments.my,
+  );
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  return payload.items;
+}

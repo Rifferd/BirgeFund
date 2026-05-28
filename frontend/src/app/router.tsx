@@ -9,6 +9,12 @@ import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AuthorHomePage } from "@/pages/author/AuthorHomePage";
 import { DashboardHomePage } from "@/pages/dashboard/DashboardHomePage";
+import { MySupportsPage } from "@/pages/dashboard/MySupportsPage";
+import { NotificationsPage } from "@/pages/dashboard/NotificationsPage";
+import { ProfilePage } from "@/pages/dashboard/ProfilePage";
+import { SettingsPage } from "@/pages/dashboard/SettingsPage";
+import { TransactionsPage } from "@/pages/dashboard/TransactionsPage";
+
 import { HomePage } from "@/pages/public/HomePage";
 import { ProjectDetailPage } from "@/pages/public/ProjectDetailPage";
 import { ProjectsPage } from "@/pages/public/ProjectsPage";
@@ -53,6 +59,26 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <DashboardHomePage />,
+      },
+      {
+        path: "profile",
+        element: <ProfilePage />,
+      },
+      {
+        path: "supports",
+        element: <MySupportsPage />,
+      },
+      {
+        path: "transactions",
+        element: <TransactionsPage />,
+      },
+      {
+        path: "notifications",
+        element: <NotificationsPage />,
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
       },
     ],
   },
