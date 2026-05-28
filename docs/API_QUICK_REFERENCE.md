@@ -156,7 +156,7 @@ Swagger UI: http://localhost:8000/docs
 
 Admin login:
 
-curl -X POST http://localhost:8000/api/auth/login -H "Content-Type: application/json" -d '{"email":"admin@birgefund.test","password":"AdminPass123!"}'
+curl -X POST http://localhost:8000/api/auth/login -H "Content-Type: application/json" -d '{"email":"admin@birgefund.kg","password":"AdminPass123!"}'
 
 ## Smoke test
 
