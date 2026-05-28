@@ -2,6 +2,8 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import NotFoundException
+
 from app.modules.audit.model import AuditLog
 from app.modules.audit.repository import AuditLogRepository
 from app.modules.audit.schema import AuditLogCreate
@@ -99,5 +101,23 @@ class AuditLogService:
             meta={"reason": reason} if reason else None,
         )
 
+    def get_by_id(self, audit_log_id: int) -> AuditLog:
+        audit_log = self.audit_logs.get_by_id(audit_log_id)
+
+        if audit_log is None:
+            raise NotFoundException("Audit log не найден")
+
+        return audit_log
+
     def list_latest(self, limit: int = 100) -> list[AuditLog]:
         return self.audit_logs.list_latest(limit=limit)
+
+    def list_by_entity(self, *, entity_type: str, entity_id: str, limit: int = 100) -> list[AuditLog]:
+        return self.audit_logs.list_by_entity(
+            entity_type=entity_type,
+            entity_id=entity_id,
+            limit=limit,
+        )
+
+    def list_by_actor(self, *, actor_id: int, limit: int = 100) -> list[AuditLog]:
+        return self.audit_logs.list_by_actor(actor_id=actor_id, limit=limit)

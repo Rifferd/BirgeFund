@@ -268,3 +268,34 @@ class AdminFinanceService:
             reason=reason,
             current_user=current_user,
         )
+
+
+from app.modules.audit.model import AuditLog
+
+
+class AdminAuditLogService:
+    def __init__(self, db: Session) -> None:
+        self.audit = AuditLogService(db)
+
+    def list_logs(
+        self,
+        *,
+        limit: int = 100,
+        entity_type: str | None = None,
+        entity_id: str | None = None,
+        actor_id: int | None = None,
+    ) -> list[AuditLog]:
+        if entity_type is not None and entity_id is not None:
+            return self.audit.list_by_entity(
+                entity_type=entity_type,
+                entity_id=entity_id,
+                limit=limit,
+            )
+
+        if actor_id is not None:
+            return self.audit.list_by_actor(actor_id=actor_id, limit=limit)
+
+        return self.audit.list_latest(limit=limit)
+
+    def get_log(self, audit_log_id: int) -> AuditLog:
+        return self.audit.get_by_id(audit_log_id)

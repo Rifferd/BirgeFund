@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_database_session
 from app.core.permissions import Permissions, require_any_permission, require_permission
+from app.modules.audit.schema import AuditLogRead
 from app.modules.admin.schema import (
     AdminDashboardStats,
     AdminUserBlockRequest,
@@ -10,6 +11,7 @@ from app.modules.admin.schema import (
     AdminUserUpdate,
 )
 from app.modules.admin.service import (
+    AdminAuditLogService,
     AdminDashboardService,
     AdminFinanceService,
     AdminProjectService,
@@ -212,3 +214,32 @@ def list_admin_project_refunds(
 ) -> list[RefundRead]:
     service = AdminFinanceService(db)
     return service.list_project_refunds(project_id)
+
+
+
+@router.get("/audit-logs", response_model=list[AuditLogRead])
+def list_admin_audit_logs(
+    limit: int = Query(default=100, ge=1, le=500),
+    entity_type: str | None = Query(default=None),
+    entity_id: str | None = Query(default=None),
+    actor_id: int | None = Query(default=None),
+    current_user: User = Depends(require_permission(Permissions.AUDIT_READ)),
+    db: Session = Depends(get_database_session),
+) -> list[AuditLogRead]:
+    service = AdminAuditLogService(db)
+    return service.list_logs(
+        limit=limit,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        actor_id=actor_id,
+    )
+
+
+@router.get("/audit-logs/{audit_log_id}", response_model=AuditLogRead)
+def get_admin_audit_log(
+    audit_log_id: int,
+    current_user: User = Depends(require_permission(Permissions.AUDIT_READ)),
+    db: Session = Depends(get_database_session),
+) -> AuditLogRead:
+    service = AdminAuditLogService(db)
+    return service.get_log(audit_log_id)
