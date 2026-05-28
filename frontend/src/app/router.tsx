@@ -8,6 +8,8 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AuthorHomePage } from "@/pages/author/AuthorHomePage";
+import { AuthorProjectsPage } from "@/pages/author/AuthorProjectsPage";
+import { CreateProjectPage } from "@/pages/author/CreateProjectPage";
 import { DashboardHomePage } from "@/pages/dashboard/DashboardHomePage";
 import { MySupportsPage } from "@/pages/dashboard/MySupportsPage";
 import { NotificationsPage } from "@/pages/dashboard/NotificationsPage";
@@ -89,6 +91,14 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <AuthorHomePage />,
+      },
+      {
+        path: "projects",
+        element: <AuthorProjectsPage />,
+      },
+      {
+        path: "projects/create",
+        element: <CreateProjectPage />,
       },
     ],
   },

@@ -31,6 +31,8 @@ const navItems = [
 
 const authorItems = [
   { to: routes.author, label: "Кабинет автора", icon: FolderKanban },
+  { to: "/author/projects", label: "Мои проекты", icon: FolderKanban },
+  { to: "/author/projects/create", label: "Создать проект", icon: FolderKanban },
 ];
 
 function DashboardNav({ onNavigate }: { onNavigate?: () => void }) {

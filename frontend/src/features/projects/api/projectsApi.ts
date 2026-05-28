@@ -29,3 +29,16 @@ export function getProjectBySlug(slug: string) {
     auth: false,
   });
 }
+
+
+export async function getMyProjects() {
+  const payload = await apiClient.get<Project[] | { items: Project[] }>(
+    endpoints.projects.my,
+  );
+
+  return normalizeApiList(payload);
+}
+
+export function submitProjectToReview(projectId: number | string) {
+  return apiClient.post<Project>(endpoints.projects.submitReview(projectId));
+}
