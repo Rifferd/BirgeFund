@@ -7,6 +7,7 @@ import { ProtectedRoute } from "@/features/auth/components/ProtectedRoute";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
+import { AdminProjectsPage } from "@/pages/admin/AdminProjectsPage";
 import { AuthorHomePage } from "@/pages/author/AuthorHomePage";
 import { AuthorProjectsPage } from "@/pages/author/AuthorProjectsPage";
 import { CreateProjectPage } from "@/pages/author/CreateProjectPage";
@@ -109,6 +110,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <AdminDashboardPage />,
+      },
+      {
+        path: "projects",
+        element: <AdminProjectsPage />,
       },
     ],
   },
