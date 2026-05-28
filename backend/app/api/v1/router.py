@@ -12,6 +12,7 @@ from app.modules.ledger.router import router as ledger_router
 from app.modules.refunds.router import router as refunds_router
 from app.modules.comments.router import router as comments_router
 from app.modules.complaints.router import router as complaints_router
+from app.modules.notifications.router import router as notifications_router
 from app.modules.auth.router import router as auth_router
 
 api_router = APIRouter()
@@ -27,4 +28,5 @@ api_router.include_router(ledger_router)
 api_router.include_router(refunds_router)
 api_router.include_router(comments_router)
 api_router.include_router(complaints_router)
+api_router.include_router(notifications_router)
 api_router.include_router(debug_router)

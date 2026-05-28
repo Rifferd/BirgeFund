@@ -20,3 +20,4 @@ from app.modules.ledger import model as ledger_model  # noqa: E402,F401
 from app.modules.refunds import model as refunds_model  # noqa: E402,F401
 from app.modules.comments import model as comments_model  # noqa: E402,F401
 from app.modules.complaints import model as complaints_model  # noqa: E402,F401
+from app.modules.notifications import model as notifications_model  # noqa: E402,F401

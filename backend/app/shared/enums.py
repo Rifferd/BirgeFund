@@ -98,3 +98,20 @@ class ComplaintReason(StrEnum):
     INSULTS = "insults"
     PROHIBITED_CONTENT = "prohibited_content"
     OTHER = "other"
+
+
+class FileType(StrEnum):
+    PROJECT_IMAGE = "project_image"
+    PROJECT_REPORT_FILE = "project_report_file"
+    AUTHOR_DOCUMENT = "author_document"
+    CMS_IMAGE = "cms_image"
+    BANNER_IMAGE = "banner_image"
+
+
+class NotificationType(StrEnum):
+    SYSTEM = "system"
+    PROJECT_STATUS_CHANGED = "project_status_changed"
+    REPORT_REVIEWED = "report_reviewed"
+    COMPLAINT_UPDATED = "complaint_updated"
+    PAYMENT_CONFIRMED = "payment_confirmed"
+    REFUND_CREATED = "refund_created"
