@@ -40,6 +40,7 @@ class ProjectBase(BaseSchema):
 
 
 class ProjectCreate(ProjectBase):
+    category_ids: list[int] = Field(default_factory=list)
     translations: list[ProjectTranslationCreate] = Field(min_length=1)
 
 
@@ -50,6 +51,7 @@ class ProjectUpdate(BaseSchema):
     city: str | None = Field(default=None, max_length=120)
     goal_amount: Decimal | None = Field(default=None, gt=0)
     deadline: date | None = None
+    category_ids: list[int] | None = None
     translations: list[ProjectTranslationCreate] | None = None
 
 
