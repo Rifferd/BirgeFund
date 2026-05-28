@@ -8,6 +8,8 @@ from app.modules.users.model import User
 
 
 class Permissions:
+    ADMIN_DASHBOARD = "admin.dashboard"
+
     USERS_READ = "users.read"
     USERS_UPDATE = "users.update"
     USERS_BLOCK = "users.block"
