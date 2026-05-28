@@ -220,3 +220,37 @@ export type AdminBannerCreateRequest = {
 };
 
 export type AdminBannerUpdateRequest = Partial<AdminBannerCreateRequest>;
+
+
+export type AdminStaticTranslation = {
+  id: number;
+  namespace: string;
+  key: string;
+  values: {
+    ru?: string;
+    kg?: string;
+    en?: string;
+    [key: string]: string | undefined;
+  };
+  description?: string | null;
+  created_at?: string;
+  updated_at?: string | null;
+};
+
+export type AdminTranslationsQueryParams = {
+  namespace?: string;
+  search?: string;
+};
+
+export type AdminStaticTranslationCreateRequest = {
+  namespace: string;
+  key: string;
+  values: {
+    ru: string;
+    kg: string;
+    en: string;
+  };
+  description?: string | null;
+};
+
+export type AdminStaticTranslationUpdateRequest = Partial<AdminStaticTranslationCreateRequest>;

@@ -1,12 +1,12 @@
 import type {
-  AdminComplaint,
-  AdminComplaintsQueryParams,
-  AdminCMSPage,
-  AdminCMSPageCreateRequest,
-  AdminCMSPageUpdateRequest,
   AdminBanner,
   AdminBannerCreateRequest,
   AdminBannerUpdateRequest,
+  AdminCMSPage,
+  AdminCMSPageCreateRequest,
+  AdminCMSPageUpdateRequest,
+  AdminComplaint,
+  AdminComplaintsQueryParams,
   AdminComplaintStatusUpdateRequest,
   AdminDashboardStats,
   AdminLedgerEntry,
@@ -21,6 +21,10 @@ import type {
   AdminReport,
   AdminReportsQueryParams,
   AdminReportStatusUpdateRequest,
+  AdminStaticTranslation,
+  AdminStaticTranslationCreateRequest,
+  AdminStaticTranslationUpdateRequest,
+  AdminTranslationsQueryParams,
   AdminUser,
   AdminUserBlockRequest,
   AdminUsersQueryParams,
@@ -36,9 +40,7 @@ export function getAdminDashboard() {
 export async function getAdminProjects(params?: AdminProjectsQueryParams) {
   const payload = await apiClient.get<AdminProject[] | { items: AdminProject[] }>(
     endpoints.admin.projects,
-    {
-      params,
-    },
+    { params },
   );
 
   return normalizeApiList(payload);
@@ -57,9 +59,7 @@ export function updateAdminProjectStatus(
 export async function getAdminUsers(params?: AdminUsersQueryParams) {
   const payload = await apiClient.get<AdminUser[] | { items: AdminUser[] }>(
     endpoints.admin.users,
-    {
-      params,
-    },
+    { params },
   );
 
   return normalizeApiList(payload);
@@ -98,9 +98,7 @@ export function unblockAdminUser(
 export async function getAdminPayments(params?: AdminPaymentsQueryParams) {
   const payload = await apiClient.get<AdminPayment[] | { items: AdminPayment[] }>(
     endpoints.admin.payments,
-    {
-      params,
-    },
+    { params },
   );
 
   return normalizeApiList(payload);
@@ -141,9 +139,7 @@ export async function getAdminRefunds() {
 export async function getAdminReports(params?: AdminReportsQueryParams) {
   const payload = await apiClient.get<AdminReport[] | { items: AdminReport[] }>(
     endpoints.admin.reports,
-    {
-      params,
-    },
+    { params },
   );
 
   return normalizeApiList(payload);
@@ -162,9 +158,7 @@ export function updateAdminReportStatus(
 export async function getAdminComplaints(params?: AdminComplaintsQueryParams) {
   const payload = await apiClient.get<AdminComplaint[] | { items: AdminComplaint[] }>(
     endpoints.admin.complaints,
-    {
-      params,
-    },
+    { params },
   );
 
   return normalizeApiList(payload);
@@ -179,7 +173,6 @@ export function updateAdminComplaintStatus(
     payload,
   );
 }
-
 
 export async function getAdminCMSPages() {
   const payload = await apiClient.get<AdminCMSPage[] | { items: AdminCMSPage[] }>(
@@ -199,16 +192,12 @@ export function createAdminCMSPage(payload: AdminCMSPageCreateRequest) {
 export function updateAdminCMSPage(
   pageId: number | string,
   payload: AdminCMSPageUpdateRequest,
-  AdminBanner,
-  AdminBannerCreateRequest,
-  AdminBannerUpdateRequest,
 ) {
   return apiClient.patch<AdminCMSPage, AdminCMSPageUpdateRequest>(
     endpoints.admin.cmsPage(pageId),
     payload,
   );
 }
-
 
 export async function getAdminBanners() {
   const payload = await apiClient.get<AdminBanner[] | { items: AdminBanner[] }>(
@@ -233,4 +222,35 @@ export function updateAdminBanner(
     endpoints.admin.banner(bannerId),
     payload,
   );
+}
+
+export async function getAdminTranslations(params?: AdminTranslationsQueryParams) {
+  const payload = await apiClient.get<
+    AdminStaticTranslation[] | { items: AdminStaticTranslation[] }
+  >(endpoints.admin.translations, { params });
+
+  return normalizeApiList(payload);
+}
+
+export function seedAdminTranslations() {
+  return apiClient.post<{ message: string }>(
+    endpoints.admin.translationsSeed,
+  );
+}
+
+export function createAdminTranslation(payload: AdminStaticTranslationCreateRequest) {
+  return apiClient.post<
+    AdminStaticTranslation,
+    AdminStaticTranslationCreateRequest
+  >(endpoints.admin.translations, payload);
+}
+
+export function updateAdminTranslation(
+  translationId: number | string,
+  payload: AdminStaticTranslationUpdateRequest,
+) {
+  return apiClient.patch<
+    AdminStaticTranslation,
+    AdminStaticTranslationUpdateRequest
+  >(endpoints.admin.translation(translationId), payload);
 }
