@@ -17,3 +17,4 @@ from app.modules.reports import model as reports_model  # noqa: E402,F401
 from app.modules.files import model as files_model  # noqa: E402,F401
 from app.modules.payments import model as payments_model  # noqa: E402,F401
 from app.modules.ledger import model as ledger_model  # noqa: E402,F401
+from app.modules.refunds import model as refunds_model  # noqa: E402,F401
