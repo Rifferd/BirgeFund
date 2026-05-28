@@ -1,14 +1,21 @@
-import { useTranslation } from "react-i18next";
+import { Card, CardContent, CardHeader, CardTitle, TestModeBanner } from "@/shared/ui";
 
 export function DashboardHomePage() {
-  const { t } = useTranslation();
-
   return (
-    <section className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-soft dark:border-slate-800 dark:bg-slate-900">
-      <h1 className="text-3xl font-black">{t("pages.dashboardTitle")}</h1>
-      <p className="mt-3 text-slate-600 dark:text-slate-300">
-        Личный кабинет подключим после auth store и protected routes.
-      </p>
-    </section>
+    <div className="space-y-5">
+      <TestModeBanner compact />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Личный кабинет</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Здесь будут профиль, мои поддержки, история операций, уведомления и настройки языка.
+            Баланс пользователя не показываем, потому что в demo-версии его нет.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
