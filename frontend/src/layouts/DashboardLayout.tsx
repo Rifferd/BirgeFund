@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 
+import { useLogout } from "@/features/auth/hooks/useLogout";
 import { routes } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { isRouteActive } from "@/shared/lib/navigation";
@@ -88,6 +89,7 @@ function DashboardNav({ onNavigate }: { onNavigate?: () => void }) {
 
 export function DashboardLayout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const logoutMutation = useLogout();
 
   function closeDrawer() {
     setIsDrawerOpen(false);
@@ -139,7 +141,7 @@ export function DashboardLayout() {
           <div className="mt-5 space-y-3">
             <LanguageSwitcher />
             <TestModeBanner compact />
-            <Button type="button" variant="ghost" className="w-full justify-start" leftIcon={<LogOut size={18} />}>
+            <Button type="button" variant="ghost" className="w-full justify-start" leftIcon={<LogOut size={18} />} isLoading={logoutMutation.isPending} onClick={() => logoutMutation.mutate()}>
               Выйти
             </Button>
           </div>
@@ -180,7 +182,7 @@ export function DashboardLayout() {
 
             <div className="mt-auto space-y-3 pt-6">
               <LanguageSwitcher />
-              <Button type="button" variant="ghost" className="w-full justify-start" leftIcon={<LogOut size={18} />}>
+              <Button type="button" variant="ghost" className="w-full justify-start" leftIcon={<LogOut size={18} />} isLoading={logoutMutation.isPending} onClick={() => logoutMutation.mutate()}>
                 Выйти
               </Button>
             </div>

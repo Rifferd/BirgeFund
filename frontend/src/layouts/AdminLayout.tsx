@@ -17,6 +17,7 @@ import {
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 
+import { useLogout } from "@/features/auth/hooks/useLogout";
 import { routes } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { isRouteActive } from "@/shared/lib/navigation";
@@ -69,6 +70,7 @@ function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AdminLayout() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const logoutMutation = useLogout();
 
   function closeDrawer() {
     setIsDrawerOpen(false);
@@ -125,7 +127,7 @@ export function AdminLayout() {
           <AdminNav />
 
           <div className="mt-5">
-            <Button type="button" variant="ghost" className="w-full justify-start" leftIcon={<LogOut size={18} />}>
+            <Button type="button" variant="ghost" className="w-full justify-start" leftIcon={<LogOut size={18} />} isLoading={logoutMutation.isPending} onClick={() => logoutMutation.mutate()}>
               Выйти
             </Button>
           </div>
@@ -165,7 +167,7 @@ export function AdminLayout() {
             <AdminNav onNavigate={closeDrawer} />
 
             <div className="mt-auto pt-6">
-              <Button type="button" variant="ghost" className="w-full justify-start" leftIcon={<LogOut size={18} />}>
+              <Button type="button" variant="ghost" className="w-full justify-start" leftIcon={<LogOut size={18} />} isLoading={logoutMutation.isPending} onClick={() => logoutMutation.mutate()}>
                 Выйти
               </Button>
             </div>

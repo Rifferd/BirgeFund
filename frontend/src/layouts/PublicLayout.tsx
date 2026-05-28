@@ -4,6 +4,8 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { applyTheme, getInitialTheme, type ThemeMode } from "@/app/theme";
+import { useAuthStore } from "@/features/auth/model/authStore";
+import { useLogout } from "@/features/auth/hooks/useLogout";
 import { routes } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { Button, LanguageSwitcher, TestModeBanner } from "@/shared/ui";
@@ -17,6 +19,8 @@ export function PublicLayout() {
   const { t } = useTranslation();
   const [theme, setTheme] = useState<ThemeMode>(() => getInitialTheme());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const logoutMutation = useLogout();
 
   useEffect(() => {
     applyTheme(theme);
@@ -146,13 +150,26 @@ export function PublicLayout() {
                 </NavLink>
               ))}
 
-              <Link
-                to={routes.login}
-                onClick={closeMobileMenu}
-                className="block min-h-11 rounded-2xl px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                {t("navigation.login")}
-              </Link>
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    logoutMutation.mutate();
+                    closeMobileMenu();
+                  }}
+                  className="block min-h-11 rounded-2xl px-4 py-3 text-left text-sm font-black text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Выйти
+                </button>
+              ) : (
+                <Link
+                  to={routes.login}
+                  onClick={closeMobileMenu}
+                  className="block min-h-11 rounded-2xl px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  {t("navigation.login")}
+                </Link>
+              )}
 
               <Link
                 to={routes.author}

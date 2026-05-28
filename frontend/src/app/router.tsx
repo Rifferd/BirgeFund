@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PublicLayout } from "@/layouts/PublicLayout";
+import { ProtectedRoute } from "@/features/auth/components/ProtectedRoute";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
@@ -47,7 +48,7 @@ export const router = createBrowserRouter([
   },
   {
     path: routes.dashboard,
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -57,7 +58,7 @@ export const router = createBrowserRouter([
   },
   {
     path: routes.author,
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -67,7 +68,7 @@ export const router = createBrowserRouter([
   },
   {
     path: routes.admin,
-    element: <AdminLayout />,
+    element: <ProtectedRoute><AdminLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
