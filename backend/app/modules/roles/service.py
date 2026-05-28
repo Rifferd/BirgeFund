@@ -60,6 +60,17 @@ class RoleService:
 
         return user
 
+    def get_user_permissions(self, user: User) -> set[str]:
+        return self.roles.get_user_permissions(user)
+
     def user_has_permission(self, user: User, permission_code: str) -> bool:
-        permissions = self.roles.get_user_permissions(user)
+        permissions = self.get_user_permissions(user)
         return permission_code in permissions
+
+    def user_has_any_permission(self, user: User, permission_codes: list[str]) -> bool:
+        permissions = self.get_user_permissions(user)
+        return bool(set(permission_codes).intersection(permissions))
+
+    def user_has_all_permissions(self, user: User, permission_codes: list[str]) -> bool:
+        permissions = self.get_user_permissions(user)
+        return set(permission_codes).issubset(permissions)
