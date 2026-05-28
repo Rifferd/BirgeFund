@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_database_session
+from app.core.permissions import Permissions, require_permission
 from app.modules.refunds.schema import RefundCreateRequest, RefundRead
 from app.modules.refunds.service import RefundService
 from app.modules.users.model import User
@@ -13,7 +14,7 @@ router = APIRouter(tags=["refunds"])
 def create_test_refund(
     payment_attempt_id: int,
     payload: RefundCreateRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permissions.PAYMENTS_REFUND)),
     db: Session = Depends(get_database_session),
 ) -> RefundRead:
     service = RefundService(db)
