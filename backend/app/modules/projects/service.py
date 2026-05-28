@@ -1,6 +1,9 @@
+from datetime import UTC, datetime
+
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException, PermissionDeniedException
+from app.modules.audit.service import AuditLogService
 from app.modules.projects.model import Project
 from app.modules.projects.repository import ProjectRepository
 from app.modules.projects.schema import ProjectCreate, ProjectTranslationCreate, ProjectUpdate
@@ -8,10 +11,118 @@ from app.modules.users.model import User
 from app.shared.enums import ProjectStatus, ProjectType
 
 
+ALLOWED_PROJECT_STATUS_TRANSITIONS: dict[ProjectStatus, set[ProjectStatus]] = {
+    ProjectStatus.DRAFT: {ProjectStatus.PENDING_REVIEW},
+    ProjectStatus.PENDING_REVIEW: {ProjectStatus.APPROVED, ProjectStatus.REJECTED},
+    ProjectStatus.REJECTED: {ProjectStatus.DRAFT},
+    ProjectStatus.APPROVED: {ProjectStatus.FUNDRAISING},
+    ProjectStatus.FUNDRAISING: {
+        ProjectStatus.FUNDED,
+        ProjectStatus.FAILED,
+        ProjectStatus.CANCELLED,
+        ProjectStatus.FROZEN,
+    },
+    ProjectStatus.FROZEN: {ProjectStatus.FUNDRAISING, ProjectStatus.CANCELLED},
+    ProjectStatus.FUNDED: {ProjectStatus.IN_PROGRESS},
+    ProjectStatus.IN_PROGRESS: {ProjectStatus.COMPLETED, ProjectStatus.FROZEN},
+    ProjectStatus.COMPLETED: set(),
+    ProjectStatus.FAILED: set(),
+    ProjectStatus.CANCELLED: set(),
+}
+
+
+class ProjectStatusService:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+        self.projects = ProjectRepository(db)
+        self.audit = AuditLogService(db)
+
+    def change_status(
+        self,
+        *,
+        project: Project,
+        new_status: ProjectStatus,
+        actor: User,
+        reason: str | None = None,
+    ) -> Project:
+        old_status = project.status
+
+        if old_status == new_status:
+            raise BadRequestException("Проект уже находится в этом статусе")
+
+        allowed_targets = ALLOWED_PROJECT_STATUS_TRANSITIONS.get(old_status, set())
+
+        if new_status not in allowed_targets:
+            raise BadRequestException(
+                f"Переход статуса {old_status.value} -> {new_status.value} запрещён"
+            )
+
+        self._validate_status_reason(new_status=new_status, reason=reason)
+
+        project.status = new_status
+        self._apply_status_side_effects(project=project, new_status=new_status, reason=reason)
+
+        project = self.projects.save(project)
+
+        self.audit.log_project_status_change(
+            project_id=project.id,
+            old_status=old_status.value,
+            new_status=new_status.value,
+            actor=actor,
+            reason=reason,
+        )
+
+        self.db.commit()
+        self.db.refresh(project)
+
+        return project
+
+    def _validate_status_reason(self, *, new_status: ProjectStatus, reason: str | None) -> None:
+        statuses_that_require_reason = {
+            ProjectStatus.REJECTED,
+            ProjectStatus.FROZEN,
+            ProjectStatus.CANCELLED,
+            ProjectStatus.FAILED,
+        }
+
+        if new_status in statuses_that_require_reason and not reason:
+            raise BadRequestException("Для этого статуса нужно указать причину")
+
+    def _apply_status_side_effects(
+        self,
+        *,
+        project: Project,
+        new_status: ProjectStatus,
+        reason: str | None,
+    ) -> None:
+        now = datetime.now(UTC)
+
+        if new_status == ProjectStatus.PENDING_REVIEW:
+            project.submitted_at = now
+            project.rejection_reason = None
+
+        if new_status == ProjectStatus.REJECTED:
+            project.rejection_reason = reason
+
+        if new_status == ProjectStatus.APPROVED:
+            project.approved_at = now
+            project.rejection_reason = None
+
+        if new_status == ProjectStatus.FUNDRAISING and project.published_at is None:
+            project.published_at = now
+
+        if new_status == ProjectStatus.FROZEN:
+            project.frozen_reason = reason
+
+        if new_status != ProjectStatus.FROZEN:
+            project.frozen_reason = None
+
+
 class ProjectService:
     def __init__(self, db: Session) -> None:
         self.db = db
         self.projects = ProjectRepository(db)
+        self.status_service = ProjectStatusService(db)
 
     def list_public(self) -> list[Project]:
         return self.projects.list_public()
@@ -87,17 +198,31 @@ class ProjectService:
         if project.author_id != current_user.id:
             raise PermissionDeniedException("Можно отправлять на модерацию только свои проекты")
 
-        if project.status not in [ProjectStatus.DRAFT, ProjectStatus.REJECTED]:
-            raise BadRequestException("На модерацию можно отправить только черновик или отклонённый проект")
-
         self._validate_project_ready_for_review(project)
 
-        project = self.projects.submit_to_review(project)
+        return self.status_service.change_status(
+            project=project,
+            new_status=ProjectStatus.PENDING_REVIEW,
+            actor=current_user,
+            reason="Автор отправил проект на модерацию",
+        )
 
-        self.db.commit()
-        self.db.refresh(project)
+    def change_status(
+        self,
+        *,
+        project_id: int,
+        new_status: ProjectStatus,
+        current_user: User,
+        reason: str | None = None,
+    ) -> Project:
+        project = self.get_by_id(project_id)
 
-        return project
+        return self.status_service.change_status(
+            project=project,
+            new_status=new_status,
+            actor=current_user,
+            reason=reason,
+        )
 
     def _validate_project_ready_for_review(self, project: Project) -> None:
         if project.project_type == ProjectType.INVESTMENT_DISABLED:

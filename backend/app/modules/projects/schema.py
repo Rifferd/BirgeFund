@@ -55,6 +55,11 @@ class ProjectUpdate(BaseSchema):
     translations: list[ProjectTranslationCreate] | None = None
 
 
+class ProjectStatusChangeRequest(BaseSchema):
+    status: ProjectStatus
+    reason: str | None = Field(default=None, max_length=1000)
+
+
 class ProjectRead(ProjectBase):
     id: int
     author_id: int

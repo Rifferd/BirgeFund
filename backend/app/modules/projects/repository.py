@@ -1,5 +1,3 @@
-from datetime import UTC, datetime
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -65,8 +63,7 @@ class ProjectRepository:
         ]
 
         if data.category_ids:
-            categories = self._get_categories_by_ids(data.category_ids)
-            project.categories = categories
+            project.categories = self._get_categories_by_ids(data.category_ids)
 
         self.db.add(project)
         self.db.flush()
@@ -92,17 +89,9 @@ class ProjectRepository:
         if data.category_ids is not None:
             project.categories = self._get_categories_by_ids(data.category_ids)
 
-        self.db.add(project)
-        self.db.flush()
-        self.db.refresh(project)
+        return self.save(project)
 
-        return project
-
-    def submit_to_review(self, project: Project) -> Project:
-        project.status = ProjectStatus.PENDING_REVIEW
-        project.submitted_at = datetime.now(UTC)
-        project.rejection_reason = None
-
+    def save(self, project: Project) -> Project:
         self.db.add(project)
         self.db.flush()
         self.db.refresh(project)

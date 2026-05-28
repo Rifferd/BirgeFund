@@ -1,11 +1,13 @@
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.modules.users.model import User
+
+if TYPE_CHECKING:
+    from app.modules.users.model import User
 
 
 class AuditLog(Base):
@@ -38,7 +40,7 @@ class AuditLog(Base):
         index=True,
     )
 
-    actor: Mapped[User | None] = relationship(lazy="selectin")
+    actor: Mapped["User | None"] = relationship(lazy="selectin")
 
     def __repr__(self) -> str:
         return f"AuditLog(id={self.id!r}, action={self.action!r}, entity_type={self.entity_type!r})"
