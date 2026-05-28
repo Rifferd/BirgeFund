@@ -115,3 +115,11 @@ class NotificationType(StrEnum):
     COMPLAINT_UPDATED = "complaint_updated"
     PAYMENT_CONFIRMED = "payment_confirmed"
     REFUND_CREATED = "refund_created"
+
+
+class BannerPlacement(StrEnum):
+    HOME_HERO = "home_hero"
+    HOME_SECONDARY = "home_secondary"
+    PROJECTS_TOP = "projects_top"
+    CATEGORY_TOP = "category_top"
+    TEST_MODE_NOTICE = "test_mode_notice"

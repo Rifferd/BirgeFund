@@ -16,6 +16,8 @@ from app.modules.notifications.router import router as notifications_router
 from app.modules.admin.router import router as admin_router
 from app.modules.cms.router import router as cms_router
 from app.modules.cms.admin_router import router as admin_cms_router
+from app.modules.banners.router import router as banners_router
+from app.modules.banners.admin_router import router as admin_banners_router
 from app.modules.auth.router import router as auth_router
 
 api_router = APIRouter()
@@ -35,4 +37,6 @@ api_router.include_router(notifications_router)
 api_router.include_router(admin_router)
 api_router.include_router(cms_router)
 api_router.include_router(admin_cms_router)
+api_router.include_router(banners_router)
+api_router.include_router(admin_banners_router)
 api_router.include_router(debug_router)
