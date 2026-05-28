@@ -1,4 +1,5 @@
 import type { Project } from "@/entities/project/types";
+import type { User } from "@/entities/user/types";
 
 export type AdminDashboardStats = {
   users_count?: number;
@@ -21,3 +22,23 @@ export type AdminProjectsQueryParams = {
 };
 
 export type AdminProject = Project;
+
+
+export type AdminUser = User;
+
+export type AdminUsersQueryParams = {
+  search?: string;
+  is_blocked?: boolean;
+  is_active?: boolean;
+};
+
+export type AdminUserUpdateRequest = {
+  full_name?: string | null;
+  preferred_language?: string | null;
+  is_active?: boolean;
+  is_verified?: boolean;
+};
+
+export type AdminUserBlockRequest = {
+  reason?: string;
+};

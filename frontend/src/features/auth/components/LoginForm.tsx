@@ -19,7 +19,7 @@ export function LoginForm() {
 
   const from = (location.state as LocationState | null)?.from ?? routes.dashboard;
 
-  const [email, setEmail] = useState("backer@birgefund.test");
+  const [email, setEmail] = useState("backer@birgefund.kg");
   const [password, setPassword] = useState("BackerPass123!");
 
   const loginMutation = useMutation({
@@ -78,8 +78,8 @@ export function LoginForm() {
 
       <div className="rounded-2xl bg-slate-50 p-4 text-sm leading-6 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
         <p className="font-black text-slate-900 dark:text-slate-100">Demo аккаунты:</p>
-        <p>Backer: backer@birgefund.test / BackerPass123!</p>
-        <p>Admin: admin@birgefund.test / AdminPass123!</p>
+        <p>Backer: backer@birgefund.kg / BackerPass123!</p>
+        <p>Admin: admin@birgefund.kg / AdminPass123!</p>
       </div>
 
       <p className="text-center text-sm text-slate-500 dark:text-slate-400">
