@@ -110,3 +110,24 @@ class AdminUserRepository:
         self.db.refresh(user)
 
         return user
+
+
+class AdminProjectRepository:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def list_projects(self) -> list[Project]:
+        statement = select(Project).order_by(Project.created_at.desc(), Project.id.desc())
+        return list(self.db.scalars(statement).all())
+
+    def list_projects_by_status(self, status: ProjectStatus) -> list[Project]:
+        statement = (
+            select(Project)
+            .where(Project.status == status)
+            .order_by(Project.created_at.desc(), Project.id.desc())
+        )
+        return list(self.db.scalars(statement).all())
+
+    def get_by_id(self, project_id: int) -> Project | None:
+        statement = select(Project).where(Project.id == project_id)
+        return self.db.scalar(statement)

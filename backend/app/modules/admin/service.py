@@ -1,9 +1,16 @@
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequestException, NotFoundException
-from app.modules.admin.repository import AdminDashboardRepository, AdminUserRepository
+from app.modules.admin.repository import (
+    AdminDashboardRepository,
+    AdminProjectRepository,
+    AdminUserRepository,
+)
 from app.modules.admin.schema import AdminDashboardStats, AdminUserUpdate
 from app.modules.audit.service import AuditLogService
+from app.modules.ledger.service import LedgerService
+from app.modules.projects.model import Project
+from app.modules.projects.service import ProjectStatusService
 from app.modules.users.model import User
 from app.shared.enums import LedgerEntryType, PaymentAttemptStatus, ProjectStatus
 
@@ -147,3 +154,65 @@ class AdminUserService:
         self.db.refresh(user)
 
         return user
+
+
+class AdminProjectService:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+        self.projects = AdminProjectRepository(db)
+        self.ledger = LedgerService(db)
+        self.status_service = ProjectStatusService(db)
+
+    def list_projects(self, status: ProjectStatus | None = None) -> list[Project]:
+        if status is None:
+            projects = self.projects.list_projects()
+        else:
+            projects = self.projects.list_projects_by_status(status)
+
+        return [self.attach_ledger_summary(project) for project in projects]
+
+    def get_project(self, project_id: int) -> Project:
+        project = self.projects.get_by_id(project_id)
+
+        if project is None:
+            raise NotFoundException("Проект не найден")
+
+        return self.attach_ledger_summary(project)
+
+    def change_status(
+        self,
+        *,
+        project_id: int,
+        new_status: ProjectStatus,
+        reason: str | None,
+        current_user: User,
+    ) -> Project:
+        project = self.projects.get_by_id(project_id)
+
+        if project is None:
+            raise NotFoundException("Проект не найден")
+
+        project = self.status_service.change_status(
+            project=project,
+            new_status=new_status,
+            actor=current_user,
+            reason=reason,
+        )
+
+        return self.attach_ledger_summary(project)
+
+    def attach_ledger_summary(self, project: Project) -> Project:
+        summary = self.ledger.get_project_summary(project.id)
+
+        project.gross_collected = summary.gross_collected
+        project.net_amount = summary.net_amount
+        project.platform_fee_amount = summary.platform_fee_amount
+        project.refunded_amount = summary.refunded_amount
+
+        if project.goal_amount > 0:
+            progress = int((summary.gross_collected / project.goal_amount) * 100)
+            project.progress_percent = min(progress, 100)
+        else:
+            project.progress_percent = 0
+
+        return project
