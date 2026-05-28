@@ -1,4 +1,7 @@
 import type {
+  AdminComplaint,
+  AdminComplaintsQueryParams,
+  AdminComplaintStatusUpdateRequest,
   AdminDashboardStats,
   AdminLedgerEntry,
   AdminLedgerSummary,
@@ -9,6 +12,9 @@ import type {
   AdminProjectStatusUpdateRequest,
   AdminRefund,
   AdminRefundCreateRequest,
+  AdminReport,
+  AdminReportsQueryParams,
+  AdminReportStatusUpdateRequest,
   AdminUser,
   AdminUserBlockRequest,
   AdminUsersQueryParams,
@@ -124,4 +130,46 @@ export async function getAdminRefunds() {
   );
 
   return normalizeApiList(payload);
+}
+
+export async function getAdminReports(params?: AdminReportsQueryParams) {
+  const payload = await apiClient.get<AdminReport[] | { items: AdminReport[] }>(
+    endpoints.admin.reports,
+    {
+      params,
+    },
+  );
+
+  return normalizeApiList(payload);
+}
+
+export function updateAdminReportStatus(
+  reportId: number | string,
+  payload: AdminReportStatusUpdateRequest,
+) {
+  return apiClient.patch<AdminReport, AdminReportStatusUpdateRequest>(
+    endpoints.admin.reportStatus(reportId),
+    payload,
+  );
+}
+
+export async function getAdminComplaints(params?: AdminComplaintsQueryParams) {
+  const payload = await apiClient.get<AdminComplaint[] | { items: AdminComplaint[] }>(
+    endpoints.admin.complaints,
+    {
+      params,
+    },
+  );
+
+  return normalizeApiList(payload);
+}
+
+export function updateAdminComplaintStatus(
+  complaintId: number | string,
+  payload: AdminComplaintStatusUpdateRequest,
+) {
+  return apiClient.patch<AdminComplaint, AdminComplaintStatusUpdateRequest>(
+    endpoints.admin.complaintStatus(complaintId),
+    payload,
+  );
 }

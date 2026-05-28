@@ -81,3 +81,56 @@ export type AdminLedgerSummary = {
   currency?: string;
   [key: string]: unknown;
 };
+
+export type AdminReport = {
+  id: number;
+  project_id: number;
+  author_id?: number | null;
+  title?: string | null;
+  text?: string | null;
+  language?: string | null;
+  status: string;
+  moderator_comment?: string | null;
+  created_at?: string;
+  updated_at?: string | null;
+  submitted_at?: string | null;
+  reviewed_at?: string | null;
+  [key: string]: unknown;
+};
+
+export type AdminReportsQueryParams = {
+  status?: string;
+  project_id?: number | string;
+};
+
+export type AdminReportStatusUpdateRequest = {
+  status: string;
+  reason?: string;
+};
+
+export type AdminComplaint = {
+  id: number;
+  reporter_id?: number | null;
+  project_id?: number | null;
+  comment_id?: number | null;
+  target_type?: string | null;
+  target_id?: number | null;
+  reason?: string | null;
+  description?: string | null;
+  status: string;
+  moderator_comment?: string | null;
+  created_at?: string;
+  updated_at?: string | null;
+  reviewed_at?: string | null;
+  [key: string]: unknown;
+};
+
+export type AdminComplaintsQueryParams = {
+  status?: string;
+  project_id?: number | string;
+};
+
+export type AdminComplaintStatusUpdateRequest = {
+  status: string;
+  reason?: string;
+};
