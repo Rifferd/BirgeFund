@@ -32,6 +32,14 @@ class LedgerEntryRepository:
         )
         return list(self.db.scalars(statement).all())
 
+    def list_by_payment_attempt(self, payment_attempt_id: int) -> list[LedgerEntry]:
+        statement = (
+            select(LedgerEntry)
+            .where(LedgerEntry.payment_attempt_id == payment_attempt_id)
+            .order_by(LedgerEntry.id.asc())
+        )
+        return list(self.db.scalars(statement).all())
+
     def create(self, data: LedgerEntryCreate) -> LedgerEntry:
         ledger_entry = LedgerEntry(**data.model_dump())
 
