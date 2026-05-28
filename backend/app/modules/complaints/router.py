@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_database_session
 from app.core.permissions import Permissions, require_permission
-from app.modules.complaints.schema import ComplaintCreate, ComplaintRead
+from app.modules.complaints.schema import (
+    ComplaintCreate,
+    ComplaintModerationRequest,
+    ComplaintRead,
+)
 from app.modules.complaints.service import ComplaintService
 from app.modules.users.model import User
 
@@ -46,3 +50,18 @@ def list_project_complaints(
 ) -> list[ComplaintRead]:
     service = ComplaintService(db)
     return service.list_by_project(project_id)
+
+
+@router.patch("/{complaint_id}/status", response_model=ComplaintRead)
+def moderate_complaint(
+    complaint_id: int,
+    payload: ComplaintModerationRequest,
+    current_user: User = Depends(require_permission(Permissions.COMPLAINTS_MANAGE)),
+    db: Session = Depends(get_database_session),
+) -> ComplaintRead:
+    service = ComplaintService(db)
+    return service.moderate(
+        complaint_id=complaint_id,
+        current_user=current_user,
+        data=payload,
+    )

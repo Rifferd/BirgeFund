@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -47,6 +49,27 @@ class ComplaintRepository:
             text=data.text,
             status=ComplaintStatus.OPEN,
         )
+
+        self.db.add(complaint)
+        self.db.flush()
+        self.db.refresh(complaint)
+
+        return complaint
+
+    def moderate(
+        self,
+        *,
+        complaint: Complaint,
+        status: ComplaintStatus,
+        moderator_id: int,
+        moderator_comment: str | None,
+    ) -> Complaint:
+        complaint.status = status
+        complaint.moderator_id = moderator_id
+        complaint.moderator_comment = moderator_comment
+
+        if status in {ComplaintStatus.RESOLVED, ComplaintStatus.REJECTED}:
+            complaint.reviewed_at = datetime.now(UTC)
 
         self.db.add(complaint)
         self.db.flush()
