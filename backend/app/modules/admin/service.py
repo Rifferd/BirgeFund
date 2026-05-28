@@ -216,3 +216,55 @@ class AdminProjectService:
             project.progress_percent = 0
 
         return project
+
+
+from app.modules.ledger.model import LedgerEntry
+from app.modules.ledger.schema import ProjectLedgerSummary
+from app.modules.payments.model import PaymentAttempt
+from app.modules.payments.repository import PaymentAttemptRepository
+from app.modules.refunds.model import Refund
+from app.modules.refunds.service import RefundService
+
+
+class AdminFinanceService:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+        self.payments = PaymentAttemptRepository(db)
+        self.ledger = LedgerService(db)
+        self.refunds = RefundService(db)
+
+    def list_payments(self) -> list[PaymentAttempt]:
+        return self.payments.list_all()
+
+    def get_payment(self, payment_id: int) -> PaymentAttempt:
+        payment = self.payments.get_by_id(payment_id)
+
+        if payment is None:
+            raise NotFoundException("Платёжная попытка не найдена")
+
+        return payment
+
+    def list_project_ledger(self, project_id: int) -> list[LedgerEntry]:
+        return self.ledger.list_by_project(project_id)
+
+    def get_project_ledger_summary(self, project_id: int) -> ProjectLedgerSummary:
+        return self.ledger.get_project_summary(project_id)
+
+    def list_refunds(self) -> list[Refund]:
+        return self.refunds.list_all()
+
+    def list_project_refunds(self, project_id: int) -> list[Refund]:
+        return self.refunds.list_by_project(project_id)
+
+    def create_refund(
+        self,
+        *,
+        payment_attempt_id: int,
+        reason: str,
+        current_user: User,
+    ) -> Refund:
+        return self.refunds.create_refund(
+            payment_attempt_id=payment_attempt_id,
+            reason=reason,
+            current_user=current_user,
+        )

@@ -99,5 +99,8 @@ class RefundService:
 
         return refund
 
+    def list_all(self) -> list[Refund]:
+        return self.refunds.list_all()
+
     def list_by_project(self, project_id: int) -> list[Refund]:
         return self.refunds.list_by_project(project_id)

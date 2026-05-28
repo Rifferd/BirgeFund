@@ -28,6 +28,13 @@ class PaymentAttemptRepository:
         )
         return self.db.scalar(statement)
 
+    def list_all(self) -> list[PaymentAttempt]:
+        statement = select(PaymentAttempt).order_by(
+            PaymentAttempt.created_at.desc(),
+            PaymentAttempt.id.desc(),
+        )
+        return list(self.db.scalars(statement).all())
+
     def list_by_user(self, user_id: int) -> list[PaymentAttempt]:
         statement = (
             select(PaymentAttempt)

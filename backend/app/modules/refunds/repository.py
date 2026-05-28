@@ -15,6 +15,10 @@ class RefundRepository:
         statement = select(Refund).where(Refund.id == refund_id)
         return self.db.scalar(statement)
 
+    def list_all(self) -> list[Refund]:
+        statement = select(Refund).order_by(Refund.created_at.desc(), Refund.id.desc())
+        return list(self.db.scalars(statement).all())
+
     def list_by_payment_attempt(self, payment_attempt_id: int) -> list[Refund]:
         statement = (
             select(Refund)

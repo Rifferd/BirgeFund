@@ -9,8 +9,16 @@ from app.modules.admin.schema import (
     AdminUserRead,
     AdminUserUpdate,
 )
-from app.modules.admin.service import AdminDashboardService, AdminProjectService, AdminUserService
+from app.modules.admin.service import (
+    AdminDashboardService,
+    AdminFinanceService,
+    AdminProjectService,
+    AdminUserService,
+)
+from app.modules.ledger.schema import LedgerEntryRead, ProjectLedgerSummary
+from app.modules.payments.schema import PaymentAttemptRead
 from app.modules.projects.schema import ProjectRead, ProjectStatusChangeRequest
+from app.modules.refunds.schema import RefundCreateRequest, RefundRead
 from app.modules.users.model import User
 from app.shared.enums import ProjectStatus
 
@@ -131,3 +139,76 @@ def change_admin_project_status(
         reason=payload.reason,
         current_user=current_user,
     )
+
+
+@router.get("/payments", response_model=list[PaymentAttemptRead])
+def list_admin_payments(
+    current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
+    db: Session = Depends(get_database_session),
+) -> list[PaymentAttemptRead]:
+    service = AdminFinanceService(db)
+    return service.list_payments()
+
+
+@router.get("/payments/{payment_id}", response_model=PaymentAttemptRead)
+def get_admin_payment(
+    payment_id: int,
+    current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
+    db: Session = Depends(get_database_session),
+) -> PaymentAttemptRead:
+    service = AdminFinanceService(db)
+    return service.get_payment(payment_id)
+
+
+@router.post("/payments/{payment_id}/refund", response_model=RefundRead)
+def create_admin_refund(
+    payment_id: int,
+    payload: RefundCreateRequest,
+    current_user: User = Depends(require_permission(Permissions.PAYMENTS_REFUND)),
+    db: Session = Depends(get_database_session),
+) -> RefundRead:
+    service = AdminFinanceService(db)
+    return service.create_refund(
+        payment_attempt_id=payment_id,
+        reason=payload.reason,
+        current_user=current_user,
+    )
+
+
+@router.get("/ledger/projects/{project_id}", response_model=list[LedgerEntryRead])
+def list_admin_project_ledger(
+    project_id: int,
+    current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
+    db: Session = Depends(get_database_session),
+) -> list[LedgerEntryRead]:
+    service = AdminFinanceService(db)
+    return service.list_project_ledger(project_id)
+
+
+@router.get("/ledger/projects/{project_id}/summary", response_model=ProjectLedgerSummary)
+def get_admin_project_ledger_summary(
+    project_id: int,
+    current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
+    db: Session = Depends(get_database_session),
+) -> ProjectLedgerSummary:
+    service = AdminFinanceService(db)
+    return service.get_project_ledger_summary(project_id)
+
+
+@router.get("/refunds", response_model=list[RefundRead])
+def list_admin_refunds(
+    current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
+    db: Session = Depends(get_database_session),
+) -> list[RefundRead]:
+    service = AdminFinanceService(db)
+    return service.list_refunds()
+
+
+@router.get("/projects/{project_id}/refunds", response_model=list[RefundRead])
+def list_admin_project_refunds(
+    project_id: int,
+    current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
+    db: Session = Depends(get_database_session),
+) -> list[RefundRead]:
+    service = AdminFinanceService(db)
+    return service.list_project_refunds(project_id)
