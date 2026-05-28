@@ -1,11 +1,22 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import { useHealth } from "@/features/health/hooks/useHealth";
 import { routes } from "@/shared/config/routes";
 import { Button, Card, CardContent, ProgressBar, StatusBadge, TestModeBanner } from "@/shared/ui";
 
 export function HomePage() {
   const { t } = useTranslation();
+  const healthQuery = useHealth();
+
+  const backendStatus =
+    healthQuery.isLoading
+      ? "Проверяем..."
+      : healthQuery.isError
+        ? "Backend недоступен"
+        : healthQuery.data?.status === "ok"
+          ? "Backend работает"
+          : "Неизвестно";
 
   return (
     <main className="mx-auto grid max-w-7xl gap-8 px-5 py-12 md:py-20 lg:grid-cols-[1.1fr_0.9fr]">
@@ -38,11 +49,12 @@ export function HomePage() {
           <div className="flex flex-wrap gap-2">
             <StatusBadge tone="emerald">Идёт сбор</StatusBadge>
             <StatusBadge tone="slate">Благотворительная поддержка</StatusBadge>
+            <StatusBadge tone={healthQuery.isError ? "red" : "sky"}>{backendStatus}</StatusBadge>
           </div>
 
           <h2 className="mt-5 text-2xl font-black">Книги для школьной библиотеки</h2>
           <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Demo-проект из backend seed. После подключения API карточки будут приходить с сервера.
+            Следующим шагом подключим реальные категории и проекты из backend API.
           </p>
 
           <div className="mt-6">
