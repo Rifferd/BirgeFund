@@ -31,6 +31,31 @@ class Permissions:
     CMS_UPDATE = "cms.update"
 
 
+DEFAULT_PERMISSION_TITLES = {
+    Permissions.ADMIN_DASHBOARD: "Просмотр admin dashboard",
+
+    Permissions.USERS_READ: "Просмотр пользователей",
+    Permissions.USERS_UPDATE: "Редактирование пользователей",
+    Permissions.USERS_BLOCK: "Блокировка пользователей",
+
+    Permissions.PROJECTS_CREATE: "Создание проектов",
+    Permissions.PROJECTS_UPDATE: "Редактирование проектов",
+    Permissions.PROJECTS_MODERATE: "Модерация проектов",
+    Permissions.PROJECTS_FREEZE: "Заморозка проектов",
+
+    Permissions.PAYMENTS_READ: "Просмотр платежей",
+    Permissions.PAYMENTS_REFUND: "Создание refund",
+
+    Permissions.REPORTS_MODERATE: "Модерация отчётов",
+    Permissions.COMPLAINTS_MANAGE: "Управление жалобами",
+
+    Permissions.SETTINGS_UPDATE: "Изменение настроек",
+    Permissions.TRANSLATIONS_UPDATE: "Изменение переводов",
+    Permissions.AUDIT_READ: "Просмотр audit logs",
+    Permissions.CMS_UPDATE: "Управление CMS",
+}
+
+
 def get_user_permission_codes(user: User) -> set[str]:
     permission_codes: set[str] = set()
 

@@ -7,7 +7,9 @@ from app.modules.audit.schema import AuditLogRead
 from app.modules.complaints.schema import ComplaintModerationRequest, ComplaintRead
 from app.modules.reports.schema import ProjectReportModerationRequest, ProjectReportRead
 from app.modules.admin.schema import (
+    AdminAssignRoleRequest,
     AdminDashboardStats,
+    AdminSeedPermissionsResponse,
     AdminUserBlockRequest,
     AdminUserRead,
     AdminUserUpdate,
@@ -18,12 +20,14 @@ from app.modules.admin.service import (
     AdminFinanceService,
     AdminModerationService,
     AdminProjectService,
+    AdminRoleService,
     AdminUserService,
 )
 from app.modules.ledger.schema import LedgerEntryRead, ProjectLedgerSummary
 from app.modules.payments.schema import PaymentAttemptRead
 from app.modules.projects.schema import ProjectRead, ProjectStatusChangeRequest
 from app.modules.refunds.schema import RefundCreateRequest, RefundRead
+from app.modules.roles.schema import PermissionRead, RoleCreate, RoleRead
 from app.modules.users.model import User
 from app.shared.enums import ComplaintStatus, ProjectStatus, ReportStatus
 
@@ -295,4 +299,57 @@ def moderate_admin_complaint(
         complaint_id=complaint_id,
         current_user=current_user,
         payload=payload,
+    )
+
+
+
+@router.get("/permissions", response_model=list[PermissionRead])
+def list_admin_permissions(
+    current_user: User = Depends(require_permission(Permissions.USERS_READ)),
+    db: Session = Depends(get_database_session),
+) -> list[PermissionRead]:
+    service = AdminRoleService(db)
+    return service.list_permissions()
+
+
+@router.post("/permissions/seed", response_model=AdminSeedPermissionsResponse)
+def seed_admin_permissions(
+    current_user: User = Depends(require_permission(Permissions.USERS_UPDATE)),
+    db: Session = Depends(get_database_session),
+) -> AdminSeedPermissionsResponse:
+    service = AdminRoleService(db)
+    return service.seed_permissions(current_user)
+
+
+@router.get("/roles", response_model=list[RoleRead])
+def list_admin_roles(
+    current_user: User = Depends(require_permission(Permissions.USERS_READ)),
+    db: Session = Depends(get_database_session),
+) -> list[RoleRead]:
+    service = AdminRoleService(db)
+    return service.list_roles()
+
+
+@router.post("/roles", response_model=RoleRead)
+def create_admin_role(
+    payload: RoleCreate,
+    current_user: User = Depends(require_permission(Permissions.USERS_UPDATE)),
+    db: Session = Depends(get_database_session),
+) -> RoleRead:
+    service = AdminRoleService(db)
+    return service.create_role(data=payload, current_user=current_user)
+
+
+@router.post("/users/{user_id}/roles", response_model=AdminUserRead)
+def assign_admin_role_to_user(
+    user_id: int,
+    payload: AdminAssignRoleRequest,
+    current_user: User = Depends(require_permission(Permissions.USERS_UPDATE)),
+    db: Session = Depends(get_database_session),
+) -> AdminUserRead:
+    service = AdminRoleService(db)
+    return service.assign_role_to_user(
+        user_id=user_id,
+        role_name=payload.role_name,
+        current_user=current_user,
     )

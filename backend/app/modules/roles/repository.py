@@ -9,6 +9,18 @@ class RoleRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
+    def list_roles(self) -> list[Role]:
+        statement = select(Role).order_by(Role.id.asc())
+        return list(self.db.scalars(statement).all())
+
+    def list_permissions(self) -> list[Permission]:
+        statement = select(Permission).order_by(Permission.code.asc())
+        return list(self.db.scalars(statement).all())
+
+    def get_role_by_id(self, role_id: int) -> Role | None:
+        statement = select(Role).where(Role.id == role_id)
+        return self.db.scalar(statement)
+
     def get_role_by_name(self, name: str) -> Role | None:
         statement = select(Role).where(Role.name == name)
         return self.db.scalar(statement)

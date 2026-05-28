@@ -345,3 +345,135 @@ class AdminModerationService:
             current_user=current_user,
             data=payload,
         )
+
+
+from app.core.permissions import DEFAULT_PERMISSION_TITLES
+from app.modules.admin.schema import AdminSeedPermissionsResponse
+from app.modules.roles.model import Permission, Role
+from app.modules.roles.repository import RoleRepository
+from app.modules.roles.schema import RoleCreate
+from app.modules.users.repository import UserRepository
+
+
+class AdminRoleService:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+        self.roles = RoleRepository(db)
+        self.users = UserRepository(db)
+        self.audit = AuditLogService(db)
+
+    def list_permissions(self) -> list[Permission]:
+        return self.roles.list_permissions()
+
+    def seed_permissions(self, current_user: User) -> AdminSeedPermissionsResponse:
+        created_count = 0
+        existing_count = 0
+
+        for code, title in DEFAULT_PERMISSION_TITLES.items():
+            existing_permission = self.roles.get_permission_by_code(code)
+
+            if existing_permission is not None:
+                existing_count += 1
+                continue
+
+            self.roles.create_permission(
+                code=code,
+                title=title,
+                description=f"System permission: {code}",
+            )
+            created_count += 1
+
+        self.audit.create_log(
+            action="admin.permissions_seeded",
+            entity_type="permission",
+            actor=current_user,
+            new_values={
+                "created_count": created_count,
+                "existing_count": existing_count,
+                "total_count": len(DEFAULT_PERMISSION_TITLES),
+            },
+        )
+
+        self.db.commit()
+
+        return AdminSeedPermissionsResponse(
+            created_count=created_count,
+            existing_count=existing_count,
+            total_count=len(DEFAULT_PERMISSION_TITLES),
+        )
+
+    def list_roles(self) -> list[Role]:
+        return self.roles.list_roles()
+
+    def create_role(self, *, data: RoleCreate, current_user: User) -> Role:
+        existing_role = self.roles.get_role_by_name(data.name)
+
+        if existing_role is not None:
+            raise BadRequestException("Роль с таким name уже существует")
+
+        role = self.roles.create_role(
+            name=data.name,
+            title=data.title,
+            description=data.description,
+            is_system=False,
+        )
+
+        for permission_code in data.permission_codes:
+            permission = self.roles.get_permission_by_code(permission_code)
+
+            if permission is None:
+                raise BadRequestException(f"Permission {permission_code} не найден")
+
+            self.roles.assign_permission_to_role(role, permission)
+
+        self.audit.create_log(
+            action="admin.role_created",
+            entity_type="role",
+            entity_id=role.id,
+            actor=current_user,
+            new_values={
+                "name": role.name,
+                "title": role.title,
+                "permission_codes": data.permission_codes,
+            },
+        )
+
+        self.db.commit()
+        self.db.refresh(role)
+
+        return role
+
+    def assign_role_to_user(
+        self,
+        *,
+        user_id: int,
+        role_name: str,
+        current_user: User,
+    ) -> User:
+        user = self.users.get_by_id(user_id)
+
+        if user is None:
+            raise NotFoundException("Пользователь не найден")
+
+        role = self.roles.get_role_by_name(role_name)
+
+        if role is None:
+            raise NotFoundException("Роль не найдена")
+
+        self.roles.assign_role_to_user(user, role)
+
+        self.audit.create_log(
+            action="admin.role_assigned_to_user",
+            entity_type="user",
+            entity_id=user.id,
+            actor=current_user,
+            new_values={
+                "role_name": role.name,
+                "user_id": user.id,
+            },
+        )
+
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user

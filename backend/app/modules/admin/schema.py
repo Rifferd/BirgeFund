@@ -52,3 +52,13 @@ class AdminUserUpdate(BaseSchema):
 
 class AdminUserBlockRequest(BaseSchema):
     reason: str | None = Field(default=None, max_length=1000)
+
+
+class AdminAssignRoleRequest(BaseSchema):
+    role_name: str = Field(min_length=2, max_length=100)
+
+
+class AdminSeedPermissionsResponse(BaseSchema):
+    created_count: int
+    existing_count: int
+    total_count: int
