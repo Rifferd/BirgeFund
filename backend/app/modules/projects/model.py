@@ -12,6 +12,7 @@ from app.shared.enums import FundingType, ProjectStatus, ProjectType
 if TYPE_CHECKING:
     from app.modules.users.model import User
     from app.modules.categories.model import Category
+    from app.modules.rewards.model import ProjectReward
 
 
 class Project(Base):
@@ -88,6 +89,12 @@ class Project(Base):
     categories: Mapped[list["Category"]] = relationship(
         secondary="project_categories",
         back_populates="projects",
+        lazy="selectin",
+    )
+
+    rewards: Mapped[list["ProjectReward"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
         lazy="selectin",
     )
 
