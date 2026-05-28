@@ -2,6 +2,29 @@ import type { Project } from "@/entities/project/types";
 import { apiClient, endpoints } from "@/shared/api";
 import { normalizeApiList } from "@/shared/lib/apiList";
 
+export type ProjectTranslationCreate = {
+  language: "ru" | "kg" | "en";
+  title: string;
+  short_description: string;
+  description: string;
+  risks?: string | null;
+  refund_policy?: string | null;
+  reward_description?: string | null;
+  report_text?: string | null;
+};
+
+export type ProjectCreateRequest = {
+  slug: string;
+  project_type: string;
+  funding_type: string;
+  city: string;
+  goal_amount: number;
+  currency: string;
+  deadline: string;
+  category_ids: number[];
+  translations: ProjectTranslationCreate[];
+};
+
 export type ProjectsQueryParams = {
   category?: string;
   status?: string;
@@ -41,4 +64,12 @@ export async function getMyProjects() {
 
 export function submitProjectToReview(projectId: number | string) {
   return apiClient.post<Project>(endpoints.projects.submitReview(projectId));
+}
+
+
+export function createProject(payload: ProjectCreateRequest) {
+  return apiClient.post<Project, ProjectCreateRequest>(
+    endpoints.projects.create,
+    payload,
+  );
 }

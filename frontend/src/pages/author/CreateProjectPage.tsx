@@ -1,30 +1,35 @@
-import { Card, CardContent, CardHeader, CardTitle, StatusBadge, TestModeBanner } from "@/shared/ui";
+import { useTranslation } from "react-i18next";
+
+import { useCategories } from "@/features/categories/hooks/useCategories";
+import { ProjectWizard } from "@/features/projects/components/ProjectWizard";
+import type { LanguageCode } from "@/shared/types/api";
+import { ErrorState, LoadingState, StatusBadge } from "@/shared/ui";
 
 export function CreateProjectPage() {
+  const { i18n } = useTranslation();
+  const language = i18n.language as LanguageCode;
+
+  const categoriesQuery = useCategories();
+
   return (
     <div className="space-y-5">
-      <TestModeBanner compact />
-
       <div>
         <StatusBadge tone="amber">Создание проекта</StatusBadge>
         <h1 className="mt-3 text-3xl font-black">Новый проект</h1>
         <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          На следующем этапе здесь будет пошаговый wizard: основная информация,
-          переводы, тип проекта, цель, дедлайн, риски, условия возврата и предпросмотр.
+          Заполните черновик проекта. После создания его можно отправить на модерацию из раздела “Мои проекты”.
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Wizard будет здесь</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Сначала мы сделали список проектов автора и отправку на модерацию,
-            чтобы было куда возвращаться после создания проекта.
-          </p>
-        </CardContent>
-      </Card>
+      {categoriesQuery.isLoading ? <LoadingState text="Загружаем категории..." /> : null}
+
+      {categoriesQuery.isError ? (
+        <ErrorState description="Не удалось загрузить категории для создания проекта." />
+      ) : null}
+
+      {!categoriesQuery.isLoading && !categoriesQuery.isError ? (
+        <ProjectWizard categories={categoriesQuery.data ?? []} language={language} />
+      ) : null}
     </div>
   );
 }
