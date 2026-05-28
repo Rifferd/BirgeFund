@@ -11,6 +11,7 @@ from app.shared.enums import FundingType, ProjectStatus, ProjectType
 
 if TYPE_CHECKING:
     from app.modules.users.model import User
+    from app.modules.categories.model import Category
 
 
 class Project(Base):
@@ -81,6 +82,12 @@ class Project(Base):
     translations: Mapped[list["ProjectTranslation"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    categories: Mapped[list["Category"]] = relationship(
+        secondary="project_categories",
+        back_populates="projects",
         lazy="selectin",
     )
 
