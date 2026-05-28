@@ -3,9 +3,9 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.modules.payments.model import PaymentAttempt
-from app.modules.payments.schema import MockPaymentCreateRequest
-from app.shared.enums import PaymentAttemptStatus
+from app.modules.payments.model import PaymentAttempt, PlatformFeeRule
+from app.modules.payments.schema import MockPaymentCreateRequest, PlatformFeeRuleCreate, PlatformFeeRuleUpdate
+from app.shared.enums import PaymentAttemptStatus, ProjectType
 
 
 class PaymentAttemptRepository:
@@ -97,3 +97,37 @@ class PaymentAttemptRepository:
         self.db.refresh(payment_attempt)
 
         return payment_attempt
+
+
+class PlatformFeeRuleRepository:
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def get_by_project_type(self, project_type: ProjectType) -> PlatformFeeRule | None:
+        statement = select(PlatformFeeRule).where(PlatformFeeRule.project_type == project_type)
+        return self.db.scalar(statement)
+
+    def list_all(self) -> list[PlatformFeeRule]:
+        statement = select(PlatformFeeRule).order_by(PlatformFeeRule.id.asc())
+        return list(self.db.scalars(statement).all())
+
+    def create(self, data: PlatformFeeRuleCreate) -> PlatformFeeRule:
+        rule = PlatformFeeRule(**data.model_dump())
+
+        self.db.add(rule)
+        self.db.flush()
+        self.db.refresh(rule)
+
+        return rule
+
+    def update(self, rule: PlatformFeeRule, data: PlatformFeeRuleUpdate) -> PlatformFeeRule:
+        update_data = data.model_dump(exclude_unset=True)
+
+        for field, value in update_data.items():
+            setattr(rule, field, value)
+
+        self.db.add(rule)
+        self.db.flush()
+        self.db.refresh(rule)
+
+        return rule
