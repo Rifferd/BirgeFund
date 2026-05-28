@@ -134,3 +134,43 @@ export type AdminComplaintStatusUpdateRequest = {
   status: string;
   reason?: string;
 };
+
+
+export type AdminCMSPageTranslation = {
+  id?: number;
+  page_id?: number;
+  language: "ru" | "kg" | "en" | string;
+  title: string;
+  content: string;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  created_at?: string;
+  updated_at?: string | null;
+};
+
+export type AdminCMSPage = {
+  id: number;
+  slug: string;
+  status?: string;
+  is_published?: boolean;
+  published_at?: string | null;
+  created_at?: string;
+  updated_at?: string | null;
+  translations: AdminCMSPageTranslation[];
+};
+
+export type AdminCMSPageCreateRequest = {
+  slug: string;
+  translations: Array<{
+    language: "ru" | "kg" | "en";
+    title: string;
+    content: string;
+    meta_title?: string | null;
+    meta_description?: string | null;
+  }>;
+};
+
+export type AdminCMSPageUpdateRequest = Partial<AdminCMSPageCreateRequest> & {
+  status?: string;
+  is_published?: boolean;
+};

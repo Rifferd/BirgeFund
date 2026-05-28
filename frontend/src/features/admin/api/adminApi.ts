@@ -1,6 +1,9 @@
 import type {
   AdminComplaint,
   AdminComplaintsQueryParams,
+  AdminCMSPage,
+  AdminCMSPageCreateRequest,
+  AdminCMSPageUpdateRequest,
   AdminComplaintStatusUpdateRequest,
   AdminDashboardStats,
   AdminLedgerEntry,
@@ -170,6 +173,32 @@ export function updateAdminComplaintStatus(
 ) {
   return apiClient.patch<AdminComplaint, AdminComplaintStatusUpdateRequest>(
     endpoints.admin.complaintStatus(complaintId),
+    payload,
+  );
+}
+
+
+export async function getAdminCMSPages() {
+  const payload = await apiClient.get<AdminCMSPage[] | { items: AdminCMSPage[] }>(
+    endpoints.admin.cmsPages,
+  );
+
+  return normalizeApiList(payload);
+}
+
+export function createAdminCMSPage(payload: AdminCMSPageCreateRequest) {
+  return apiClient.post<AdminCMSPage, AdminCMSPageCreateRequest>(
+    endpoints.admin.cmsPages,
+    payload,
+  );
+}
+
+export function updateAdminCMSPage(
+  pageId: number | string,
+  payload: AdminCMSPageUpdateRequest,
+) {
+  return apiClient.patch<AdminCMSPage, AdminCMSPageUpdateRequest>(
+    endpoints.admin.cmsPage(pageId),
     payload,
   );
 }
