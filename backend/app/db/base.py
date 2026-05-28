@@ -13,3 +13,4 @@ from app.modules.projects import model as projects_model  # noqa: E402,F401
 from app.modules.categories import model as categories_model  # noqa: E402,F401
 from app.modules.audit import model as audit_model  # noqa: E402,F401
 from app.modules.rewards import model as rewards_model  # noqa: E402,F401
+from app.modules.reports import model as reports_model  # noqa: E402,F401

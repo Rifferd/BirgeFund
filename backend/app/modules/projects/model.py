@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.modules.users.model import User
     from app.modules.categories.model import Category
     from app.modules.rewards.model import ProjectReward
+    from app.modules.reports.model import ProjectReport
 
 
 class Project(Base):
@@ -99,6 +100,12 @@ class Project(Base):
     )
 
     updates: Mapped[list["ProjectUpdateItem"]] = relationship(
+        back_populates="project",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    reports: Mapped[list["ProjectReport"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
         lazy="selectin",
