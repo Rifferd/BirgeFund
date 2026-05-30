@@ -158,7 +158,7 @@ export function AdminComplaintsPage() {
                   </div>
 
                   <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {complaint.reason || complaint.description || "Описание жалобы отсутствует."}
+                    {complaint.reason || complaint.text || "Описание жалобы отсутствует."}
                   </p>
                 </CardContent>
               </Card>

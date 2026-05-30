@@ -116,7 +116,7 @@ export type AdminComplaint = {
   target_type?: string | null;
   target_id?: number | null;
   reason?: string | null;
-  description?: string | null;
+  text?: string | null;
   status: string;
   moderator_comment?: string | null;
   created_at?: string;
@@ -132,7 +132,7 @@ export type AdminComplaintsQueryParams = {
 
 export type AdminComplaintStatusUpdateRequest = {
   status: string;
-  reason?: string;
+  moderator_comment?: string | null;
 };
 
 
@@ -143,7 +143,7 @@ export type AdminCMSPageTranslation = {
   title: string;
   content: string;
   meta_title?: string | null;
-  meta_description?: string | null;
+  meta_text?: string | null;
   created_at?: string;
   updated_at?: string | null;
 };
@@ -166,7 +166,7 @@ export type AdminCMSPageCreateRequest = {
     title: string;
     content: string;
     meta_title?: string | null;
-    meta_description?: string | null;
+    meta_text?: string | null;
   }>;
 };
 
@@ -232,7 +232,7 @@ export type AdminStaticTranslation = {
     en?: string;
     [key: string]: string | undefined;
   };
-  description?: string | null;
+  text?: string | null;
   created_at?: string;
   updated_at?: string | null;
 };
@@ -250,7 +250,7 @@ export type AdminStaticTranslationCreateRequest = {
     kg: string;
     en: string;
   };
-  description?: string | null;
+  text?: string | null;
 };
 
 export type AdminStaticTranslationUpdateRequest = Partial<AdminStaticTranslationCreateRequest>;

@@ -24,7 +24,7 @@ export function ComplaintModerationModal({
   onClose,
 }: ComplaintModerationModalProps) {
   const [status, setStatus] = useState("resolved");
-  const [reason, setReason] = useState("Жалоба обработана модератором.");
+  const [moderatorComment, setModeratorComment] = useState("Жалоба обработана модератором.");
   const updateStatusMutation = useAdminComplaintStatus();
 
   return (
@@ -41,6 +41,10 @@ export function ComplaintModerationModal({
           <Button
             type="button"
             isLoading={updateStatusMutation.isPending}
+            disabled={
+              (status === "resolved" || status === "rejected") &&
+              moderatorComment.trim().length < 2
+            }
             onClick={() => {
               if (!complaint) {
                 return;
@@ -51,7 +55,7 @@ export function ComplaintModerationModal({
                   complaintId: complaint.id,
                   payload: {
                     status,
-                    reason,
+                    moderator_comment: moderatorComment.trim() || null,
                   },
                 },
                 {
@@ -74,10 +78,6 @@ export function ComplaintModerationModal({
               {complaint.project_id ? (
                 <StatusBadge tone="slate">Project #{complaint.project_id}</StatusBadge>
               ) : null}
-
-              {complaint.comment_id ? (
-                <StatusBadge tone="slate">Comment #{complaint.comment_id}</StatusBadge>
-              ) : null}
             </div>
 
             <h2 className="mt-3 text-xl font-black">Жалоба #{complaint.id}</h2>
@@ -92,7 +92,7 @@ export function ComplaintModerationModal({
               <b>Причина:</b> {complaint.reason || "—"}
             </p>
             <p className="mt-2">
-              <b>Описание:</b> {complaint.description || "—"}
+              <b>Текст жалобы:</b> {complaint.text || "—"}
             </p>
           </div>
 
@@ -110,9 +110,16 @@ export function ComplaintModerationModal({
 
           <Textarea
             label="Комментарий модератора"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
+            value={moderatorComment}
+            onChange={(event) => setModeratorComment(event.target.value)}
           />
+
+          {(status === "resolved" || status === "rejected") &&
+          moderatorComment.trim().length < 2 ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+              Для закрытия жалобы нужен комментарий модератора.
+            </div>
+          ) : null}
 
           {updateStatusMutation.isError ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">

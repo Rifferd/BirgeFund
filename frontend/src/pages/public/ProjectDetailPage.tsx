@@ -1,7 +1,11 @@
-import { AlertTriangle, MapPin } from "lucide-react";
+import { AlertTriangle, Flag, MapPin } from "lucide-react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import { CommentSection } from "@/features/comments/components/CommentSection";
+import { ComplaintModal } from "@/features/complaints/components/ComplaintModal";
+import { useAuthStore } from "@/features/auth/model/authStore";
 import { ProjectFundingCard } from "@/features/projects/components/ProjectFundingCard";
 import { useProject } from "@/features/projects/hooks/useProject";
 import { getTranslation } from "@/shared/lib/getTranslation";
@@ -28,6 +32,8 @@ export function ProjectDetailPage() {
 
   const projectQuery = useProject(slug);
   const project = projectQuery.data;
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const [isProjectComplaintOpen, setIsProjectComplaintOpen] = useState(false);
 
   if (projectQuery.isLoading) {
     return (
@@ -136,21 +142,42 @@ export function ProjectDetailPage() {
 
         <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
           <CardContent>
-            <div className="flex gap-3">
-              <AlertTriangle className="shrink-0 text-amber-700 dark:text-amber-200" />
-              <div>
-                <h2 className="font-black text-amber-900 dark:text-amber-100">
-                  Важное предупреждение
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-amber-800 dark:text-amber-100">
-                  Поддержка проекта не является инвестицией. Доход, проценты,
-                  дивиденды или прибыль не гарантируются. Платформа работает в
-                  тестовом режиме, реальные деньги не списываются.
-                </p>
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+              <div className="flex gap-3">
+                <AlertTriangle className="shrink-0 text-amber-700 dark:text-amber-200" />
+                <div>
+                  <h2 className="font-black text-amber-900 dark:text-amber-100">
+                    Важное предупреждение
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-amber-800 dark:text-amber-100">
+                    Поддержка проекта не является инвестицией. Доход, проценты,
+                    дивиденды или прибыль не гарантируются. Платформа работает в
+                    тестовом режиме, реальные деньги не списываются.
+                  </p>
+                </div>
               </div>
+
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() => setIsProjectComplaintOpen(true)}
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-2xl border border-amber-300 px-4 py-2 text-sm font-black text-amber-900 transition hover:bg-amber-100 dark:border-amber-700 dark:text-amber-100 dark:hover:bg-amber-900/50"
+                >
+                  <Flag size={16} />
+                  Пожаловаться
+                </button>
+              ) : null}
             </div>
           </CardContent>
         </Card>
+
+        <CommentSection projectId={project.id} />
+
+        <ComplaintModal
+          isOpen={isProjectComplaintOpen}
+          projectId={project.id}
+          onClose={() => setIsProjectComplaintOpen(false)}
+        />
       </section>
 
       <ProjectFundingCard project={project} />
