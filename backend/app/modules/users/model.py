@@ -46,3 +46,36 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, email={self.email!r})"
+
+    @property
+    def role_names(self) -> list[str]:
+        roles = getattr(self, "roles", None) or []
+        result: list[str] = []
+
+        for role in roles:
+            name = getattr(role, "name", None)
+            if name and name not in result:
+                result.append(name)
+
+        return result
+
+    @property
+    def permissions(self) -> list[str]:
+        roles = getattr(self, "roles", None) or []
+        result: list[str] = []
+
+        for role in roles:
+            role_permissions = getattr(role, "permissions", None) or []
+
+            for permission in role_permissions:
+                value = (
+                    getattr(permission, "code", None)
+                    or getattr(permission, "name", None)
+                    or getattr(permission, "slug", None)
+                )
+
+                if value and value not in result:
+                    result.append(value)
+
+        return result
+

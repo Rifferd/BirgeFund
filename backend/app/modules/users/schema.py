@@ -20,6 +20,14 @@ class UserUpdate(BaseSchema):
     preferred_language: str | None = Field(default=None, max_length=10)
 
 
+class UserRoleRead(BaseSchema):
+    id: int
+    name: str
+    title: str | None = None
+    description: str | None = None
+    is_active: bool | None = None
+
+
 class UserRead(UserBase):
     id: int
     is_active: bool
@@ -28,6 +36,10 @@ class UserRead(UserBase):
     last_login_at: datetime | None
     created_at: datetime
     updated_at: datetime | None
+
+    roles: list[UserRoleRead] = Field(default_factory=list)
+    role_names: list[str] = Field(default_factory=list)
+    permissions: list[str] = Field(default_factory=list)
 
 
 class UserPrivateRead(UserRead):
