@@ -73,3 +73,49 @@ export function createProject(payload: ProjectCreateRequest) {
     payload,
   );
 }
+
+
+export type ProjectUpdateCreateRequest = {
+  language: "ru" | "kg" | "en";
+  title: string;
+  text: string;
+  is_public: boolean;
+};
+
+export type ProjectReportCreateRequest = {
+  language: "ru" | "kg" | "en";
+  title: string;
+  text: string;
+  is_public?: boolean;
+};
+
+export type ProjectRewardCreateRequest = {
+  title: string;
+  description: string;
+  amount: number;
+  currency: string;
+  quantity_total?: number | null;
+  is_active: boolean;
+  sort_order: number;
+};
+
+export function createProjectUpdate(
+  projectId: number | string,
+  payload: ProjectUpdateCreateRequest,
+) {
+  return apiClient.post(endpoints.projects.updates(projectId), payload);
+}
+
+export function createProjectReport(
+  projectId: number | string,
+  payload: ProjectReportCreateRequest,
+) {
+  return apiClient.post(endpoints.projects.reports(projectId), payload);
+}
+
+export function createProjectReward(
+  projectId: number | string,
+  payload: ProjectRewardCreateRequest,
+) {
+  return apiClient.post(endpoints.projects.rewards(projectId), payload);
+}

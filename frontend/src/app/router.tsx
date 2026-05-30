@@ -27,6 +27,7 @@ import { SettingsPage } from "@/pages/dashboard/SettingsPage";
 import { AuthorHomePage } from "@/pages/author/AuthorHomePage";
 import { AuthorProjectsPage } from "@/pages/author/AuthorProjectsPage";
 import { CreateProjectPage } from "@/pages/author/CreateProjectPage";
+import { AuthorProjectManagePage } from "@/pages/author/AuthorProjectManagePage";
 
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
@@ -133,6 +134,10 @@ export const router = createBrowserRouter([
       {
         path: "projects/create",
         element: <CreateProjectPage />,
+      },
+      {
+        path: "projects/:projectId/manage",
+        element: <AuthorProjectManagePage />,
       },
     ],
   },

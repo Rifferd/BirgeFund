@@ -23,6 +23,12 @@ export function AuthorProjectActions({ project }: AuthorProjectActionsProps) {
           </Button>
         </Link>
 
+        <Link to={`/author/projects/${project.id}/manage`}>
+          <Button type="button" variant="secondary" className="w-full sm:w-auto">
+            Управлять
+          </Button>
+        </Link>
+
         {canSubmitToReview ? (
           <Button
             type="button"
@@ -30,7 +36,7 @@ export function AuthorProjectActions({ project }: AuthorProjectActionsProps) {
             isLoading={submitMutation.isPending}
             onClick={() => submitMutation.mutate(project.id)}
           >
-            Отправить на модерацию
+            На модерацию
           </Button>
         ) : null}
       </div>
