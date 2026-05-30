@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.ledger.model import LedgerEntry
 from app.modules.ledger.repository import LedgerEntryRepository
@@ -10,32 +10,32 @@ from app.shared.enums import LedgerEntryType
 
 
 class LedgerService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.ledger = LedgerEntryRepository(db)
 
-    def create_entry(self, data: LedgerEntryCreate, *, commit: bool = False) -> LedgerEntry:
-        entry = self.ledger.create(data)
+    async def create_entry(self, data: LedgerEntryCreate, *, commit: bool = False) -> LedgerEntry:
+        entry = await self.ledger.create(data)
 
         if commit:
-            self.db.commit()
-            self.db.refresh(entry)
+            await self.db.commit()
+            await self.db.refresh(entry)
 
         return entry
 
-    def list_by_project(self, project_id: int) -> list[LedgerEntry]:
-        return self.ledger.list_by_project(project_id)
+    async def list_by_project(self, project_id: int) -> list[LedgerEntry]:
+        return await self.ledger.list_by_project(project_id)
 
-    def list_by_user(self, user_id: int) -> list[LedgerEntry]:
-        return self.ledger.list_by_user(user_id)
+    async def list_by_user(self, user_id: int) -> list[LedgerEntry]:
+        return await self.ledger.list_by_user(user_id)
 
-    def list_by_payment_attempt(self, payment_attempt_id: int) -> list[LedgerEntry]:
-        return self.ledger.list_by_payment_attempt(payment_attempt_id)
+    async def list_by_payment_attempt(self, payment_attempt_id: int) -> list[LedgerEntry]:
+        return await self.ledger.list_by_payment_attempt(payment_attempt_id)
 
-    def has_entries_for_payment_attempt(self, payment_attempt_id: int) -> bool:
-        return bool(self.list_by_payment_attempt(payment_attempt_id))
+    async def has_entries_for_payment_attempt(self, payment_attempt_id: int) -> bool:
+        return bool(await self.list_by_payment_attempt(payment_attempt_id))
 
-    def create_payment_entries(
+    async def create_payment_entries(
         self,
         *,
         payment_attempt: PaymentAttempt,
@@ -45,7 +45,7 @@ class LedgerService:
         project_net_amount = payment_attempt.amount - platform_fee_amount
 
         entries = [
-            self.create_entry(
+            await self.create_entry(
                 LedgerEntryCreate(
                     project_id=payment_attempt.project_id,
                     user_id=payment_attempt.user_id,
@@ -57,7 +57,7 @@ class LedgerService:
                     meta={"source": "mock_payment"},
                 )
             ),
-            self.create_entry(
+            await self.create_entry(
                 LedgerEntryCreate(
                     project_id=payment_attempt.project_id,
                     user_id=payment_attempt.user_id,
@@ -69,7 +69,7 @@ class LedgerService:
                     meta={"source": "mock_payment"},
                 )
             ),
-            self.create_entry(
+            await self.create_entry(
                 LedgerEntryCreate(
                     project_id=payment_attempt.project_id,
                     user_id=payment_attempt.user_id,
@@ -85,20 +85,20 @@ class LedgerService:
 
         return entries
 
-    def get_project_summary(self, project_id: int) -> ProjectLedgerSummary:
-        project_gross = self.ledger.sum_by_project_and_type(
+    async def get_project_summary(self, project_id: int) -> ProjectLedgerSummary:
+        project_gross = await self.ledger.sum_by_project_and_type(
             project_id=project_id,
             entry_type=LedgerEntryType.PROJECT_GROSS,
         )
-        project_net = self.ledger.sum_by_project_and_type(
+        project_net = await self.ledger.sum_by_project_and_type(
             project_id=project_id,
             entry_type=LedgerEntryType.PROJECT_NET,
         )
-        platform_fee = self.ledger.sum_by_project_and_type(
+        platform_fee = await self.ledger.sum_by_project_and_type(
             project_id=project_id,
             entry_type=LedgerEntryType.PLATFORM_FEE,
         )
-        refund = self.ledger.sum_by_project_and_type(
+        refund = await self.ledger.sum_by_project_and_type(
             project_id=project_id,
             entry_type=LedgerEntryType.REFUND,
         )
