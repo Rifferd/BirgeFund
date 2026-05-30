@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestException, NotFoundException, PermissionDeniedException
 from app.modules.projects.repository import ProjectRepository
@@ -10,21 +10,27 @@ from app.shared.enums import ProjectStatus
 
 
 class ProjectRewardService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.projects = ProjectRepository(db)
         self.rewards = ProjectRewardRepository(db)
 
-    def list_by_project(self, project_id: int) -> list[ProjectReward]:
-        project = self.projects.get_by_id(project_id)
+    async def list_by_project(self, project_id: int) -> list[ProjectReward]:
+        project = await self.projects.get_by_id(project_id)
 
         if project is None:
             raise NotFoundException("Проект не найден")
 
-        return self.rewards.list_by_project(project_id=project_id)
+        return await self.rewards.list_by_project(project_id=project_id)
 
-    def create(self, *, project_id: int, current_user: User, data: ProjectRewardCreate) -> ProjectReward:
-        project = self.projects.get_by_id(project_id)
+    async def create(
+        self,
+        *,
+        project_id: int,
+        current_user: User,
+        data: ProjectRewardCreate,
+    ) -> ProjectReward:
+        project = await self.projects.get_by_id(project_id)
 
         if project is None:
             raise NotFoundException("Проект не найден")
@@ -35,20 +41,26 @@ class ProjectRewardService:
         if project.status not in [ProjectStatus.DRAFT, ProjectStatus.REJECTED]:
             raise BadRequestException("Reward можно менять только в черновике или отклонённом проекте")
 
-        reward = self.rewards.create(project_id=project_id, data=data)
+        reward = await self.rewards.create(project_id=project_id, data=data)
 
-        self.db.commit()
-        self.db.refresh(reward)
+        await self.db.commit()
+        await self.db.refresh(reward)
 
         return reward
 
-    def update(self, *, reward_id: int, current_user: User, data: ProjectRewardUpdate) -> ProjectReward:
-        reward = self.rewards.get_by_id(reward_id)
+    async def update(
+        self,
+        *,
+        reward_id: int,
+        current_user: User,
+        data: ProjectRewardUpdate,
+    ) -> ProjectReward:
+        reward = await self.rewards.get_by_id(reward_id)
 
         if reward is None:
             raise NotFoundException("Reward не найден")
 
-        project = self.projects.get_by_id(reward.project_id)
+        project = await self.projects.get_by_id(reward.project_id)
 
         if project is None:
             raise NotFoundException("Проект не найден")
@@ -59,9 +71,9 @@ class ProjectRewardService:
         if project.status not in [ProjectStatus.DRAFT, ProjectStatus.REJECTED]:
             raise BadRequestException("Reward можно менять только в черновике или отклонённом проекте")
 
-        reward = self.rewards.update(reward, data)
+        reward = await self.rewards.update(reward, data)
 
-        self.db.commit()
-        self.db.refresh(reward)
+        await self.db.commit()
+        await self.db.refresh(reward)
 
         return reward

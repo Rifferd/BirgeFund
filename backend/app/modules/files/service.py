@@ -2,7 +2,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import BadRequestException, NotFoundException, PermissionDeniedException
@@ -143,13 +143,13 @@ class FileValidationService:
 
 
 class FileService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.files = FileRepository(db)
         self.storage = LocalFileStorageService()
         self.validator = FileValidationService()
 
-    def upload(
+    async def upload(
         self,
         *,
         upload_file: UploadFile,
@@ -160,7 +160,7 @@ class FileService:
         size_bytes = self.validator.validate(upload_file, file_type)
         path, url, saved_size_bytes = self.storage.save(upload_file, file_type)
 
-        file = self.files.create(
+        file = await self.files.create(
             FileCreate(
                 owner_id=current_user.id,
                 file_type=file_type,
@@ -174,13 +174,13 @@ class FileService:
             )
         )
 
-        self.db.commit()
-        self.db.refresh(file)
+        await self.db.commit()
+        await self.db.refresh(file)
 
         return file
 
-    def get_metadata(self, file_id: int, current_user: User | None = None) -> File:
-        file = self.files.get_by_id(file_id)
+    async def get_metadata(self, file_id: int, current_user: User | None = None) -> File:
+        file = await self.files.get_by_id(file_id)
 
         if file is None:
             raise NotFoundException("Файл не найден")
