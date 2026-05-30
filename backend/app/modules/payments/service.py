@@ -1,14 +1,23 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.exceptions import BadRequestException, NotFoundException, PermissionDeniedException, TestModeOnlyException
+from app.core.exceptions import (
+    BadRequestException,
+    NotFoundException,
+    PermissionDeniedException,
+    TestModeOnlyException,
+)
 from app.modules.audit.service import AuditActions, AuditLogService, EntityTypes
 from app.modules.ledger.service import LedgerService
 from app.modules.payments.model import PaymentAttempt, PlatformFeeRule
 from app.modules.payments.repository import PaymentAttemptRepository, PlatformFeeRuleRepository
-from app.modules.payments.schema import MockPaymentCreateRequest, PlatformFeeRuleCreate, PlatformFeeRuleUpdate
+from app.modules.payments.schema import (
+    MockPaymentCreateRequest,
+    PlatformFeeRuleCreate,
+    PlatformFeeRuleUpdate,
+)
 from app.modules.projects.repository import ProjectRepository
 from app.modules.users.model import User
 from app.shared.enums import PaymentAttemptStatus, ProjectStatus, ProjectType
@@ -23,18 +32,18 @@ DEFAULT_PLATFORM_FEE_RULES = [
 
 
 class PlatformFeeService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.rules = PlatformFeeRuleRepository(db)
 
-    def list_rules(self) -> list[PlatformFeeRule]:
-        return self.rules.list_all()
+    async def list_rules(self) -> list[PlatformFeeRule]:
+        return await self.rules.list_all()
 
-    def get_or_default_rule(self, project_type: ProjectType) -> PlatformFeeRule | None:
-        return self.rules.get_by_project_type(project_type)
+    async def get_or_default_rule(self, project_type: ProjectType) -> PlatformFeeRule | None:
+        return await self.rules.get_by_project_type(project_type)
 
-    def calculate_fee(self, *, project_type: ProjectType, amount: Decimal) -> Decimal:
-        rule = self.get_or_default_rule(project_type)
+    async def calculate_fee(self, *, project_type: ProjectType, amount: Decimal) -> Decimal:
+        rule = await self.get_or_default_rule(project_type)
 
         if rule is None or not rule.is_active:
             return Decimal("0.00")
@@ -46,28 +55,28 @@ class PlatformFeeService:
 
         return fee.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
-    def create_default_rules(self) -> list[PlatformFeeRule]:
+    async def create_default_rules(self) -> list[PlatformFeeRule]:
         created_rules: list[PlatformFeeRule] = []
 
         for rule_data in DEFAULT_PLATFORM_FEE_RULES:
-            existing_rule = self.rules.get_by_project_type(rule_data.project_type)
+            existing_rule = await self.rules.get_by_project_type(rule_data.project_type)
 
             if existing_rule is not None:
                 continue
 
-            created_rules.append(self.rules.create(rule_data))
+            created_rules.append(await self.rules.create(rule_data))
 
-        self.db.commit()
+        await self.db.commit()
 
         return created_rules
 
-    def upsert_rule(self, data: PlatformFeeRuleCreate) -> PlatformFeeRule:
-        existing_rule = self.rules.get_by_project_type(data.project_type)
+    async def upsert_rule(self, data: PlatformFeeRuleCreate) -> PlatformFeeRule:
+        existing_rule = await self.rules.get_by_project_type(data.project_type)
 
         if existing_rule is None:
-            rule = self.rules.create(data)
+            rule = await self.rules.create(data)
         else:
-            rule = self.rules.update(
+            rule = await self.rules.update(
                 existing_rule,
                 PlatformFeeRuleUpdate(
                     percent=data.percent,
@@ -76,14 +85,14 @@ class PlatformFeeService:
                 ),
             )
 
-        self.db.commit()
-        self.db.refresh(rule)
+        await self.db.commit()
+        await self.db.refresh(rule)
 
         return rule
 
 
 class PaymentService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.payments = PaymentAttemptRepository(db)
         self.projects = ProjectRepository(db)
@@ -91,7 +100,7 @@ class PaymentService:
         self.ledger = LedgerService(db)
         self.audit = AuditLogService(db)
 
-    def create_mock_payment(
+    async def create_mock_payment(
         self,
         *,
         current_user: User,
@@ -100,7 +109,7 @@ class PaymentService:
         if not settings.test_mode:
             raise TestModeOnlyException("Mock payment доступен только в TEST MODE")
 
-        existing_payment = self.payments.get_by_user_and_idempotency_key(
+        existing_payment = await self.payments.get_by_user_and_idempotency_key(
             user_id=current_user.id,
             idempotency_key=data.idempotency_key,
         )
@@ -108,7 +117,7 @@ class PaymentService:
         if existing_payment is not None:
             return existing_payment
 
-        project = self.projects.get_by_id(data.project_id)
+        project = await self.projects.get_by_id(data.project_id)
 
         if project is None:
             raise NotFoundException("Проект не найден")
@@ -122,12 +131,12 @@ class PaymentService:
         if data.amount <= 0:
             raise BadRequestException("Сумма поддержки должна быть больше нуля")
 
-        payment_attempt = self.payments.create(
+        payment_attempt = await self.payments.create(
             user_id=current_user.id,
             data=data,
         )
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action=AuditActions.PAYMENT_CREATED,
             entity_type=EntityTypes.PAYMENT_ATTEMPT,
             entity_id=payment_attempt.id,
@@ -140,12 +149,12 @@ class PaymentService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(payment_attempt)
+        await self.db.commit()
+        await self.db.refresh(payment_attempt)
 
         return payment_attempt
 
-    def confirm_mock_payment(
+    async def confirm_mock_payment(
         self,
         *,
         current_user: User,
@@ -154,7 +163,7 @@ class PaymentService:
         if not settings.test_mode:
             raise TestModeOnlyException("Mock payment доступен только в TEST MODE")
 
-        payment_attempt = self.payments.get_by_id(payment_attempt_id)
+        payment_attempt = await self.payments.get_by_id(payment_attempt_id)
 
         if payment_attempt is None:
             raise NotFoundException("Платёжная попытка не найдена")
@@ -168,7 +177,7 @@ class PaymentService:
         if payment_attempt.status != PaymentAttemptStatus.PENDING:
             raise BadRequestException("Подтвердить можно только pending payment attempt")
 
-        project = self.projects.get_by_id(payment_attempt.project_id)
+        project = await self.projects.get_by_id(payment_attempt.project_id)
 
         if project is None:
             raise NotFoundException("Проект не найден")
@@ -176,23 +185,23 @@ class PaymentService:
         if project.status != ProjectStatus.FUNDRAISING:
             raise BadRequestException("Поддержать можно только проект со статусом fundraising")
 
-        if self.ledger.has_entries_for_payment_attempt(payment_attempt.id):
+        if await self.ledger.has_entries_for_payment_attempt(payment_attempt.id):
             raise BadRequestException("Ledger entries для этой оплаты уже существуют")
 
-        platform_fee_amount = self.platform_fees.calculate_fee(
+        platform_fee_amount = await self.platform_fees.calculate_fee(
             project_type=project.project_type,
             amount=payment_attempt.amount,
         )
 
-        payment_attempt = self.payments.mark_success(payment_attempt)
+        payment_attempt = await self.payments.mark_success(payment_attempt)
 
-        self.ledger.create_payment_entries(
+        await self.ledger.create_payment_entries(
             payment_attempt=payment_attempt,
             platform_fee_amount=platform_fee_amount,
             created_by_id=current_user.id,
         )
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action=AuditActions.PAYMENT_CONFIRMED,
             entity_type=EntityTypes.PAYMENT_ATTEMPT,
             entity_id=payment_attempt.id,
@@ -206,10 +215,10 @@ class PaymentService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(payment_attempt)
+        await self.db.commit()
+        await self.db.refresh(payment_attempt)
 
         return payment_attempt
 
-    def list_my_payments(self, current_user: User) -> list[PaymentAttempt]:
-        return self.payments.list_by_user(current_user.id)
+    async def list_my_payments(self, current_user: User) -> list[PaymentAttempt]:
+        return await self.payments.list_by_user(current_user.id)

@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundException, PermissionDeniedException
 from app.modules.notifications.model import Notification
@@ -9,11 +9,11 @@ from app.shared.enums import NotificationType
 
 
 class NotificationService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.notifications = NotificationRepository(db)
 
-    def create(
+    async def create(
         self,
         *,
         user_id: int,
@@ -25,7 +25,7 @@ class NotificationService:
         payload: dict | None = None,
         commit: bool = False,
     ) -> Notification:
-        notification = self.notifications.create(
+        notification = await self.notifications.create(
             NotificationCreate(
                 user_id=user_id,
                 type=type,
@@ -38,19 +38,19 @@ class NotificationService:
         )
 
         if commit:
-            self.db.commit()
-            self.db.refresh(notification)
+            await self.db.commit()
+            await self.db.refresh(notification)
 
         return notification
 
-    def list_my(self, current_user: User) -> list[Notification]:
-        return self.notifications.list_by_user(current_user.id)
+    async def list_my(self, current_user: User) -> list[Notification]:
+        return await self.notifications.list_by_user(current_user.id)
 
-    def count_my_unread(self, current_user: User) -> int:
-        return self.notifications.count_unread_by_user(current_user.id)
+    async def count_my_unread(self, current_user: User) -> int:
+        return await self.notifications.count_unread_by_user(current_user.id)
 
-    def mark_as_read(self, notification_id: int, current_user: User) -> Notification:
-        notification = self.notifications.get_by_id(notification_id)
+    async def mark_as_read(self, notification_id: int, current_user: User) -> Notification:
+        notification = await self.notifications.get_by_id(notification_id)
 
         if notification is None:
             raise NotFoundException("Уведомление не найдено")
@@ -58,16 +58,16 @@ class NotificationService:
         if notification.user_id != current_user.id:
             raise PermissionDeniedException("Нет доступа к уведомлению")
 
-        notification = self.notifications.mark_as_read(notification)
+        notification = await self.notifications.mark_as_read(notification)
 
-        self.db.commit()
-        self.db.refresh(notification)
+        await self.db.commit()
+        await self.db.refresh(notification)
 
         return notification
 
-    def mark_all_as_read(self, current_user: User) -> list[Notification]:
-        notifications = self.notifications.mark_all_as_read(current_user.id)
+    async def mark_all_as_read(self, current_user: User) -> list[Notification]:
+        notifications = await self.notifications.mark_all_as_read(current_user.id)
 
-        self.db.commit()
+        await self.db.commit()
 
         return notifications

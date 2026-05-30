@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictException, NotFoundException
 from app.modules.audit.service import AuditLogService
@@ -83,18 +83,18 @@ DEFAULT_STATIC_TRANSLATIONS = [
 
 
 class StaticTranslationService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.translations = StaticTranslationRepository(db)
         self.audit = AuditLogService(db)
 
-    def get_dictionary(
+    async def get_dictionary(
         self,
         *,
         language: str,
         namespace: str | None = None,
     ) -> TranslationDictionaryResponse:
-        rows = self.translations.list_active(namespace=namespace)
+        rows = await self.translations.list_active(namespace=namespace)
 
         items: dict[str, str] = {}
 
@@ -109,24 +109,24 @@ class StaticTranslationService:
             items=items,
         )
 
-    def list_all(self) -> list[StaticTranslation]:
-        return self.translations.list_all()
+    async def list_all(self) -> list[StaticTranslation]:
+        return await self.translations.list_all()
 
-    def get_by_id(self, translation_id: int) -> StaticTranslation:
-        translation = self.translations.get_by_id(translation_id)
+    async def get_by_id(self, translation_id: int) -> StaticTranslation:
+        translation = await self.translations.get_by_id(translation_id)
 
         if translation is None:
             raise NotFoundException("Перевод не найден")
 
         return translation
 
-    def create(self, *, data: StaticTranslationCreate, current_user: User) -> StaticTranslation:
-        if self.translations.get_by_namespace_and_key(data.namespace, data.key) is not None:
+    async def create(self, *, data: StaticTranslationCreate, current_user: User) -> StaticTranslation:
+        if await self.translations.get_by_namespace_and_key(data.namespace, data.key) is not None:
             raise ConflictException("Перевод с таким namespace/key уже существует")
 
-        translation = self.translations.create(data)
+        translation = await self.translations.create(data)
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action="translation.created",
             entity_type="static_translation",
             entity_id=translation.id,
@@ -138,19 +138,19 @@ class StaticTranslationService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(translation)
+        await self.db.commit()
+        await self.db.refresh(translation)
 
         return translation
 
-    def update(
+    async def update(
         self,
         *,
         translation_id: int,
         data: StaticTranslationUpdate,
         current_user: User,
     ) -> StaticTranslation:
-        translation = self.get_by_id(translation_id)
+        translation = await self.get_by_id(translation_id)
 
         old_values = {
             "namespace": translation.namespace,
@@ -164,7 +164,7 @@ class StaticTranslationService:
         target_namespace = data.namespace if data.namespace is not None else translation.namespace
         target_key = data.key if data.key is not None else translation.key
 
-        existing_translation = self.translations.get_by_namespace_and_key(
+        existing_translation = await self.translations.get_by_namespace_and_key(
             target_namespace,
             target_key,
         )
@@ -172,9 +172,9 @@ class StaticTranslationService:
         if existing_translation is not None and existing_translation.id != translation.id:
             raise ConflictException("Перевод с таким namespace/key уже существует")
 
-        translation = self.translations.update(translation, data)
+        translation = await self.translations.update(translation, data)
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action="translation.updated",
             entity_type="static_translation",
             entity_id=translation.id,
@@ -190,17 +190,17 @@ class StaticTranslationService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(translation)
+        await self.db.commit()
+        await self.db.refresh(translation)
 
         return translation
 
-    def seed_defaults(self, current_user: User) -> TranslationSeedResponse:
+    async def seed_defaults(self, current_user: User) -> TranslationSeedResponse:
         created_count = 0
         existing_count = 0
 
         for translation_data in DEFAULT_STATIC_TRANSLATIONS:
-            existing_translation = self.translations.get_by_namespace_and_key(
+            existing_translation = await self.translations.get_by_namespace_and_key(
                 translation_data.namespace,
                 translation_data.key,
             )
@@ -209,10 +209,10 @@ class StaticTranslationService:
                 existing_count += 1
                 continue
 
-            self.translations.create(translation_data)
+            await self.translations.create(translation_data)
             created_count += 1
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action="translation.defaults_seeded",
             entity_type="static_translation",
             actor=current_user,
@@ -223,7 +223,7 @@ class StaticTranslationService:
             },
         )
 
-        self.db.commit()
+        await self.db.commit()
 
         return TranslationSeedResponse(
             created_count=created_count,

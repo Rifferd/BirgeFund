@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_database_session
 from app.core.permissions import Permissions, require_permission
@@ -16,22 +16,22 @@ router = APIRouter(tags=["reports"])
 
 
 @router.get("/projects/{project_id}/reports", response_model=list[ProjectReportRead])
-def list_project_reports(
+async def list_project_reports(
     project_id: int,
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[ProjectReportRead]:
     service = ProjectReportService(db)
-    return service.list_public_by_project(project_id)
+    return await service.list_public_by_project(project_id)
 
 
 @router.get("/projects/{project_id}/reports/my", response_model=list[ProjectReportRead])
-def list_my_project_reports(
+async def list_my_project_reports(
     project_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[ProjectReportRead]:
     service = ProjectReportService(db)
-    return service.list_my_project_reports(project_id, current_user)
+    return await service.list_my_project_reports(project_id, current_user)
 
 
 @router.post(
@@ -39,14 +39,14 @@ def list_my_project_reports(
     response_model=ProjectReportRead,
     status_code=status.HTTP_201_CREATED,
 )
-def create_project_report(
+async def create_project_report(
     project_id: int,
     payload: ProjectReportCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> ProjectReportRead:
     service = ProjectReportService(db)
-    return service.create(
+    return await service.create(
         project_id=project_id,
         current_user=current_user,
         data=payload,
@@ -54,14 +54,14 @@ def create_project_report(
 
 
 @router.patch("/reports/{report_id}", response_model=ProjectReportRead)
-def update_project_report(
+async def update_project_report(
     report_id: int,
     payload: ProjectReportUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> ProjectReportRead:
     service = ProjectReportService(db)
-    return service.update(
+    return await service.update(
         report_id=report_id,
         current_user=current_user,
         data=payload,
@@ -69,24 +69,24 @@ def update_project_report(
 
 
 @router.post("/reports/{report_id}/submit-review", response_model=ProjectReportRead)
-def submit_project_report(
+async def submit_project_report(
     report_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> ProjectReportRead:
     service = ProjectReportService(db)
-    return service.submit(report_id, current_user)
+    return await service.submit(report_id, current_user)
 
 
 @router.patch("/reports/{report_id}/status", response_model=ProjectReportRead)
-def moderate_project_report(
+async def moderate_project_report(
     report_id: int,
     payload: ProjectReportModerationRequest,
     current_user: User = Depends(require_permission(Permissions.REPORTS_MODERATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> ProjectReportRead:
     service = ProjectReportService(db)
-    return service.moderate(
+    return await service.moderate(
         report_id=report_id,
         status=payload.status,
         moderator_comment=payload.moderator_comment,

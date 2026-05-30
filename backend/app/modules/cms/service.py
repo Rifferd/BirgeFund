@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
 from app.modules.audit.service import AuditLogService
@@ -9,42 +9,42 @@ from app.modules.users.model import User
 
 
 class CMSPageService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.pages = CMSPageRepository(db)
         self.audit = AuditLogService(db)
 
-    def list_published(self) -> list[CMSPage]:
-        return self.pages.list_published()
+    async def list_published(self) -> list[CMSPage]:
+        return await self.pages.list_published()
 
-    def list_all(self) -> list[CMSPage]:
-        return self.pages.list_all()
+    async def list_all(self) -> list[CMSPage]:
+        return await self.pages.list_all()
 
-    def get_public_by_slug(self, slug: str) -> CMSPage:
-        page = self.pages.get_by_slug(slug)
+    async def get_public_by_slug(self, slug: str) -> CMSPage:
+        page = await self.pages.get_by_slug(slug)
 
         if page is None or not page.is_published:
             raise NotFoundException("Страница не найдена")
 
         return page
 
-    def get_by_id(self, page_id: int) -> CMSPage:
-        page = self.pages.get_by_id(page_id)
+    async def get_by_id(self, page_id: int) -> CMSPage:
+        page = await self.pages.get_by_id(page_id)
 
         if page is None:
             raise NotFoundException("Страница не найдена")
 
         return page
 
-    def create(self, *, data: CMSPageCreate, current_user: User) -> CMSPage:
-        if self.pages.get_by_slug(data.slug) is not None:
+    async def create(self, *, data: CMSPageCreate, current_user: User) -> CMSPage:
+        if await self.pages.get_by_slug(data.slug) is not None:
             raise ConflictException("CMS-страница с таким slug уже существует")
 
         self._validate_translations(data.translations)
 
-        page = self.pages.create(data)
+        page = await self.pages.create(data)
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action="cms.page_created",
             entity_type="cms_page",
             entity_id=page.id,
@@ -55,13 +55,13 @@ class CMSPageService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(page)
+        await self.db.commit()
+        await self.db.refresh(page)
 
         return page
 
-    def update(self, *, page_id: int, data: CMSPageUpdate, current_user: User) -> CMSPage:
-        page = self.get_by_id(page_id)
+    async def update(self, *, page_id: int, data: CMSPageUpdate, current_user: User) -> CMSPage:
+        page = await self.get_by_id(page_id)
 
         old_values = {
             "slug": page.slug,
@@ -69,16 +69,16 @@ class CMSPageService:
         }
 
         if data.slug is not None:
-            existing_page = self.pages.get_by_slug(data.slug)
+            existing_page = await self.pages.get_by_slug(data.slug)
             if existing_page is not None and existing_page.id != page.id:
                 raise ConflictException("CMS-страница с таким slug уже существует")
 
         if data.translations is not None:
             self._validate_translations(data.translations)
 
-        page = self.pages.update(page, data)
+        page = await self.pages.update(page, data)
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action="cms.page_updated",
             entity_type="cms_page",
             entity_id=page.id,
@@ -90,8 +90,8 @@ class CMSPageService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(page)
+        await self.db.commit()
+        await self.db.refresh(page)
 
         return page
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_database_session
 from app.core.permissions import Permissions, require_permission
@@ -11,43 +11,43 @@ router = APIRouter(prefix="/admin/cms", tags=["admin-cms"])
 
 
 @router.get("/pages", response_model=list[CMSPageRead])
-def list_admin_cms_pages(
+async def list_admin_cms_pages(
     current_user: User = Depends(require_permission(Permissions.CMS_UPDATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[CMSPageRead]:
     service = CMSPageService(db)
-    return service.list_all()
+    return await service.list_all()
 
 
 @router.get("/pages/{page_id}", response_model=CMSPageRead)
-def get_admin_cms_page(
+async def get_admin_cms_page(
     page_id: int,
     current_user: User = Depends(require_permission(Permissions.CMS_UPDATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> CMSPageRead:
     service = CMSPageService(db)
-    return service.get_by_id(page_id)
+    return await service.get_by_id(page_id)
 
 
 @router.post("/pages", response_model=CMSPageRead)
-def create_admin_cms_page(
+async def create_admin_cms_page(
     payload: CMSPageCreate,
     current_user: User = Depends(require_permission(Permissions.CMS_UPDATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> CMSPageRead:
     service = CMSPageService(db)
-    return service.create(data=payload, current_user=current_user)
+    return await service.create(data=payload, current_user=current_user)
 
 
 @router.patch("/pages/{page_id}", response_model=CMSPageRead)
-def update_admin_cms_page(
+async def update_admin_cms_page(
     page_id: int,
     payload: CMSPageUpdate,
     current_user: User = Depends(require_permission(Permissions.CMS_UPDATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> CMSPageRead:
     service = CMSPageService(db)
-    return service.update(
+    return await service.update(
         page_id=page_id,
         data=payload,
         current_user=current_user,

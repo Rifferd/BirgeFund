@@ -1,13 +1,23 @@
 from datetime import UTC, datetime
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import BadRequestException, ConflictException, NotFoundException, PermissionDeniedException
+from app.core.exceptions import (
+    BadRequestException,
+    ConflictException,
+    NotFoundException,
+    PermissionDeniedException,
+)
 from app.modules.audit.service import AuditLogService
 from app.modules.ledger.service import LedgerService
 from app.modules.projects.model import Project, ProjectUpdateItem
 from app.modules.projects.repository import ProjectRepository
-from app.modules.projects.schema import ProjectCreate, ProjectTranslationCreate, ProjectUpdate, ProjectUpdateItemCreate
+from app.modules.projects.schema import (
+    ProjectCreate,
+    ProjectTranslationCreate,
+    ProjectUpdate,
+    ProjectUpdateItemCreate,
+)
 from app.modules.users.model import User
 from app.shared.enums import ProjectStatus, ProjectType
 
@@ -33,12 +43,12 @@ ALLOWED_PROJECT_STATUS_TRANSITIONS: dict[ProjectStatus, set[ProjectStatus]] = {
 
 
 class ProjectStatusService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.projects = ProjectRepository(db)
         self.audit = AuditLogService(db)
 
-    def change_status(
+    async def change_status(
         self,
         *,
         project: Project,
@@ -63,9 +73,9 @@ class ProjectStatusService:
         project.status = new_status
         self._apply_status_side_effects(project=project, new_status=new_status, reason=reason)
 
-        project = self.projects.save(project)
+        project = await self.projects.save(project)
 
-        self.audit.log_project_status_change(
+        await self.audit.log_project_status_change(
             project_id=project.id,
             old_status=old_status.value,
             new_status=new_status.value,
@@ -73,8 +83,8 @@ class ProjectStatusService:
             reason=reason,
         )
 
-        self.db.commit()
-        self.db.refresh(project)
+        await self.db.commit()
+        await self.db.refresh(project)
 
         return project
 
@@ -120,15 +130,14 @@ class ProjectStatusService:
 
 
 class ProjectService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.projects = ProjectRepository(db)
         self.status_service = ProjectStatusService(db)
         self.ledger = LedgerService(db)
 
-
-    def attach_ledger_summary(self, project: Project) -> Project:
-        summary = self.ledger.get_project_summary(project.id)
+    async def attach_ledger_summary(self, project: Project) -> Project:
+        summary = await self.ledger.get_project_summary(project.id)
 
         project.gross_collected = summary.gross_collected
         project.net_amount = summary.net_amount
@@ -143,54 +152,54 @@ class ProjectService:
 
         return project
 
-    def attach_ledger_summary_to_list(self, projects: list[Project]) -> list[Project]:
-        return [self.attach_ledger_summary(project) for project in projects]
+    async def attach_ledger_summary_to_list(self, projects: list[Project]) -> list[Project]:
+        return [await self.attach_ledger_summary(project) for project in projects]
 
-    def list_public(self) -> list[Project]:
-        projects = self.projects.list_public()
-        return self.attach_ledger_summary_to_list(projects)
+    async def list_public(self) -> list[Project]:
+        projects = await self.projects.list_public()
+        return await self.attach_ledger_summary_to_list(projects)
 
-    def list_my_projects(self, current_user: User) -> list[Project]:
-        projects = self.projects.list_by_author(current_user.id)
-        return self.attach_ledger_summary_to_list(projects)
+    async def list_my_projects(self, current_user: User) -> list[Project]:
+        projects = await self.projects.list_by_author(current_user.id)
+        return await self.attach_ledger_summary_to_list(projects)
 
-    def get_by_slug(self, slug: str) -> Project:
-        project = self.projects.get_by_slug(slug)
-
-        if project is None:
-            raise NotFoundException("Проект не найден")
-
-        return self.attach_ledger_summary(project)
-
-    def get_by_id(self, project_id: int) -> Project:
-        project = self.projects.get_by_id(project_id)
+    async def get_by_slug(self, slug: str) -> Project:
+        project = await self.projects.get_by_slug(slug)
 
         if project is None:
             raise NotFoundException("Проект не найден")
 
-        return self.attach_ledger_summary(project)
+        return await self.attach_ledger_summary(project)
 
-    def create_draft(self, current_user: User, data: ProjectCreate) -> Project:
+    async def get_by_id(self, project_id: int) -> Project:
+        project = await self.projects.get_by_id(project_id)
+
+        if project is None:
+            raise NotFoundException("Проект не найден")
+
+        return await self.attach_ledger_summary(project)
+
+    async def create_draft(self, current_user: User, data: ProjectCreate) -> Project:
         if data.project_type == ProjectType.INVESTMENT_DISABLED:
             raise BadRequestException("Инвестиционные проекты отключены в demo-версии")
 
-        if self.projects.get_by_slug(data.slug) is not None:
+        if await self.projects.get_by_slug(data.slug) is not None:
             raise ConflictException("Проект с таким slug уже существует")
 
         self._validate_translations(data.translations)
 
-        project = self.projects.create_draft(
+        project = await self.projects.create_draft(
             author_id=current_user.id,
             data=data,
         )
 
-        self.db.commit()
-        self.db.refresh(project)
+        await self.db.commit()
+        await self.db.refresh(project)
 
-        return self.attach_ledger_summary(project)
+        return await self.attach_ledger_summary(project)
 
-    def update_draft(self, project_id: int, current_user: User, data: ProjectUpdate) -> Project:
-        project = self.get_by_id(project_id)
+    async def update_draft(self, project_id: int, current_user: User, data: ProjectUpdate) -> Project:
+        project = await self.get_by_id(project_id)
 
         if project.author_id != current_user.id:
             raise PermissionDeniedException("Можно редактировать только свои проекты")
@@ -202,38 +211,38 @@ class ProjectService:
             raise BadRequestException("Инвестиционные проекты отключены в demo-версии")
 
         if data.slug is not None:
-            existing_project = self.projects.get_by_slug(data.slug)
+            existing_project = await self.projects.get_by_slug(data.slug)
             if existing_project is not None and existing_project.id != project.id:
                 raise ConflictException("Проект с таким slug уже существует")
 
         if data.translations is not None:
             self._validate_translations(data.translations)
 
-        project = self.projects.update_project(project, data)
+        project = await self.projects.update_project(project, data)
 
-        self.db.commit()
-        self.db.refresh(project)
+        await self.db.commit()
+        await self.db.refresh(project)
 
-        return self.attach_ledger_summary(project)
+        return await self.attach_ledger_summary(project)
 
-    def submit_to_review(self, project_id: int, current_user: User) -> Project:
-        project = self.get_by_id(project_id)
+    async def submit_to_review(self, project_id: int, current_user: User) -> Project:
+        project = await self.get_by_id(project_id)
 
         if project.author_id != current_user.id:
             raise PermissionDeniedException("Можно отправлять на модерацию только свои проекты")
 
         self._validate_project_ready_for_review(project)
 
-        project = self.status_service.change_status(
+        project = await self.status_service.change_status(
             project=project,
             new_status=ProjectStatus.PENDING_REVIEW,
             actor=current_user,
             reason="Автор отправил проект на модерацию",
         )
 
-        return self.attach_ledger_summary(project)
+        return await self.attach_ledger_summary(project)
 
-    def change_status(
+    async def change_status(
         self,
         *,
         project_id: int,
@@ -241,20 +250,19 @@ class ProjectService:
         current_user: User,
         reason: str | None = None,
     ) -> Project:
-        project = self.get_by_id(project_id)
+        project = await self.get_by_id(project_id)
 
-        project = self.status_service.change_status(
+        project = await self.status_service.change_status(
             project=project,
             new_status=new_status,
             actor=current_user,
             reason=reason,
         )
 
-        return self.attach_ledger_summary(project)
+        return await self.attach_ledger_summary(project)
 
-
-    def list_public_updates(self, project_id: int) -> list[ProjectUpdateItem]:
-        project = self.get_by_id(project_id)
+    async def list_public_updates(self, project_id: int) -> list[ProjectUpdateItem]:
+        project = await self.get_by_id(project_id)
 
         public_statuses = {
             ProjectStatus.FUNDRAISING,
@@ -266,24 +274,28 @@ class ProjectService:
         if project.status not in public_statuses:
             raise NotFoundException("Проект не найден")
 
-        return self.projects.list_public_updates(project_id)
+        return await self.projects.list_public_updates(project_id)
 
-    def list_my_project_updates(self, project_id: int, current_user: User) -> list[ProjectUpdateItem]:
-        project = self.get_by_id(project_id)
+    async def list_my_project_updates(
+        self,
+        project_id: int,
+        current_user: User,
+    ) -> list[ProjectUpdateItem]:
+        project = await self.get_by_id(project_id)
 
         if project.author_id != current_user.id:
             raise PermissionDeniedException("Можно смотреть только новости своих проектов")
 
-        return self.projects.list_updates_for_author(project_id)
+        return await self.projects.list_updates_for_author(project_id)
 
-    def create_update(
+    async def create_update(
         self,
         *,
         project_id: int,
         current_user: User,
         data: ProjectUpdateItemCreate,
     ) -> ProjectUpdateItem:
-        project = self.get_by_id(project_id)
+        project = await self.get_by_id(project_id)
 
         if project.author_id != current_user.id:
             raise PermissionDeniedException("Можно добавлять новости только к своим проектам")
@@ -291,7 +303,7 @@ class ProjectService:
         if project.status in [ProjectStatus.CANCELLED, ProjectStatus.FAILED]:
             raise BadRequestException("Нельзя добавлять новости к отменённому или проваленному проекту")
 
-        project_update = self.projects.create_update(
+        project_update = await self.projects.create_update(
             project_id=project.id,
             author_id=current_user.id,
             language=data.language,
@@ -300,8 +312,8 @@ class ProjectService:
             is_public=data.is_public,
         )
 
-        self.db.commit()
-        self.db.refresh(project_update)
+        await self.db.commit()
+        await self.db.refresh(project_update)
 
         return project_update
 

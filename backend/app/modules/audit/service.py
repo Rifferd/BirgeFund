@@ -1,6 +1,6 @@
 from typing import Any
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundException
 
@@ -41,11 +41,11 @@ class EntityTypes:
 
 
 class AuditLogService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.audit_logs = AuditLogRepository(db)
 
-    def create_log(
+    async def create_log(
         self,
         *,
         action: str,
@@ -62,7 +62,7 @@ class AuditLogService:
     ) -> AuditLog:
         resolved_actor_id = actor.id if actor is not None else actor_id
 
-        audit_log = self.audit_logs.create(
+        audit_log = await self.audit_logs.create(
             AuditLogCreate(
                 actor_id=resolved_actor_id,
                 action=action,
@@ -77,12 +77,12 @@ class AuditLogService:
         )
 
         if commit:
-            self.db.commit()
-            self.db.refresh(audit_log)
+            await self.db.commit()
+            await self.db.refresh(audit_log)
 
         return audit_log
 
-    def log_project_status_change(
+    async def log_project_status_change(
         self,
         *,
         project_id: int,
@@ -91,7 +91,7 @@ class AuditLogService:
         actor: User,
         reason: str | None = None,
     ) -> AuditLog:
-        return self.create_log(
+        return await self.create_log(
             action=AuditActions.PROJECT_STATUS_CHANGED,
             entity_type=EntityTypes.PROJECT,
             entity_id=project_id,
@@ -101,23 +101,23 @@ class AuditLogService:
             meta={"reason": reason} if reason else None,
         )
 
-    def get_by_id(self, audit_log_id: int) -> AuditLog:
-        audit_log = self.audit_logs.get_by_id(audit_log_id)
+    async def get_by_id(self, audit_log_id: int) -> AuditLog:
+        audit_log = await self.audit_logs.get_by_id(audit_log_id)
 
         if audit_log is None:
             raise NotFoundException("Audit log не найден")
 
         return audit_log
 
-    def list_latest(self, limit: int = 100) -> list[AuditLog]:
-        return self.audit_logs.list_latest(limit=limit)
+    async def list_latest(self, limit: int = 100) -> list[AuditLog]:
+        return await self.audit_logs.list_latest(limit=limit)
 
-    def list_by_entity(self, *, entity_type: str, entity_id: str, limit: int = 100) -> list[AuditLog]:
-        return self.audit_logs.list_by_entity(
+    async def list_by_entity(self, *, entity_type: str, entity_id: str, limit: int = 100) -> list[AuditLog]:
+        return await self.audit_logs.list_by_entity(
             entity_type=entity_type,
             entity_id=entity_id,
             limit=limit,
         )
 
-    def list_by_actor(self, *, actor_id: int, limit: int = 100) -> list[AuditLog]:
-        return self.audit_logs.list_by_actor(actor_id=actor_id, limit=limit)
+    async def list_by_actor(self, *, actor_id: int, limit: int = 100) -> list[AuditLog]:
+        return await self.audit_logs.list_by_actor(actor_id=actor_id, limit=limit)

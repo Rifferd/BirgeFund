@@ -1,5 +1,10 @@
+import asyncio
 from datetime import UTC, date, datetime
 from decimal import Decimal
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.permissions import DEFAULT_PERMISSION_TITLES, Permissions
 from app.core.security import hash_password
@@ -91,8 +96,9 @@ ROLE_PERMISSION_CODES = {
 }
 
 
-def get_or_create_permission(db, code: str, title: str) -> Permission:
-    permission = db.query(Permission).filter(Permission.code == code).first()
+async def get_or_create_permission(db: AsyncSession, code: str, title: str) -> Permission:
+    result = await db.execute(select(Permission).where(Permission.code == code))
+    permission = result.scalar_one_or_none()
 
     if permission is not None:
         return permission
@@ -103,12 +109,18 @@ def get_or_create_permission(db, code: str, title: str) -> Permission:
         description=f"System permission: {code}",
     )
     db.add(permission)
-    db.flush()
+    await db.flush()
+
     return permission
 
 
-def get_or_create_role(db, name: str, title: str) -> Role:
-    role = db.query(Role).filter(Role.name == name).first()
+async def get_or_create_role(db: AsyncSession, name: str, title: str) -> Role:
+    result = await db.execute(
+        select(Role)
+        .options(selectinload(Role.permissions))
+        .where(Role.name == name)
+    )
+    role = result.scalar_one_or_none()
 
     if role is not None:
         return role
@@ -121,15 +133,16 @@ def get_or_create_role(db, name: str, title: str) -> Role:
         is_active=True,
     )
     db.add(role)
-    db.flush()
+    await db.flush()
+
     return role
 
 
-def seed_permissions_and_roles(db) -> dict[str, Role]:
+async def seed_permissions_and_roles(db: AsyncSession) -> dict[str, Role]:
     permissions: dict[str, Permission] = {}
 
     for code, title in DEFAULT_PERMISSION_TITLES.items():
-        permissions[code] = get_or_create_permission(db, code, title)
+        permissions[code] = await get_or_create_permission(db, code, title)
 
     role_titles = {
         "super_admin": "Super Admin",
@@ -143,7 +156,7 @@ def seed_permissions_and_roles(db) -> dict[str, Role]:
     roles: dict[str, Role] = {}
 
     for role_name, title in role_titles.items():
-        role = get_or_create_role(db, role_name, title)
+        role = await get_or_create_role(db, role_name, title)
 
         for permission_code in ROLE_PERMISSION_CODES[role_name]:
             permission = permissions[permission_code]
@@ -153,15 +166,21 @@ def seed_permissions_and_roles(db) -> dict[str, Role]:
 
         roles[role_name] = role
 
-    db.flush()
+    await db.flush()
+
     return roles
 
 
-def seed_users(db, roles: dict[str, Role]) -> dict[str, User]:
+async def seed_users(db: AsyncSession, roles: dict[str, Role]) -> dict[str, User]:
     users: dict[str, User] = {}
 
     for item in DEMO_USERS:
-        user = db.query(User).filter(User.email == item["email"]).first()
+        result = await db.execute(
+            select(User)
+            .options(selectinload(User.roles))
+            .where(User.email == item["email"])
+        )
+        user = result.scalar_one_or_none()
 
         if user is None:
             user = User(
@@ -174,7 +193,7 @@ def seed_users(db, roles: dict[str, Role]) -> dict[str, User]:
                 is_blocked=False,
             )
             db.add(user)
-            db.flush()
+            await db.flush()
 
         role = roles[item["role"]]
 
@@ -183,12 +202,23 @@ def seed_users(db, roles: dict[str, Role]) -> dict[str, User]:
 
         users[item["email"]] = user
 
-    db.flush()
+    await db.flush()
+
     return users
 
 
-def get_or_create_category(db, slug: str, sort_order: int, translations: list[dict]) -> Category:
-    category = db.query(Category).filter(Category.slug == slug).first()
+async def get_or_create_category(
+    db: AsyncSession,
+    slug: str,
+    sort_order: int,
+    translations: list[dict],
+) -> Category:
+    result = await db.execute(
+        select(Category)
+        .options(selectinload(Category.translations))
+        .where(Category.slug == slug)
+    )
+    category = result.scalar_one_or_none()
 
     if category is not None:
         return category
@@ -205,13 +235,14 @@ def get_or_create_category(db, slug: str, sort_order: int, translations: list[di
     ]
 
     db.add(category)
-    db.flush()
+    await db.flush()
+
     return category
 
 
-def seed_categories(db) -> dict[str, Category]:
+async def seed_categories(db: AsyncSession) -> dict[str, Category]:
     return {
-        "education": get_or_create_category(
+        "education": await get_or_create_category(
             db,
             slug="education",
             sort_order=1,
@@ -233,7 +264,7 @@ def seed_categories(db) -> dict[str, Category]:
                 },
             ],
         ),
-        "culture": get_or_create_category(
+        "culture": await get_or_create_category(
             db,
             slug="culture",
             sort_order=2,
@@ -255,7 +286,7 @@ def seed_categories(db) -> dict[str, Category]:
                 },
             ],
         ),
-        "social": get_or_create_category(
+        "social": await get_or_create_category(
             db,
             slug="social",
             sort_order=3,
@@ -280,27 +311,31 @@ def seed_categories(db) -> dict[str, Category]:
     }
 
 
-def seed_static_translations(db) -> None:
+async def seed_static_translations(db: AsyncSession) -> None:
     for item in DEFAULT_STATIC_TRANSLATIONS:
-        existing = (
-            db.query(StaticTranslation)
-            .filter(
+        result = await db.execute(
+            select(StaticTranslation).where(
                 StaticTranslation.namespace == item.namespace,
                 StaticTranslation.key == item.key,
             )
-            .first()
         )
+        existing = result.scalar_one_or_none()
 
         if existing is not None:
             continue
 
         db.add(StaticTranslation(**item.model_dump()))
 
-    db.flush()
+    await db.flush()
 
 
-def get_or_create_cms_page(db) -> CMSPage:
-    page = db.query(CMSPage).filter(CMSPage.slug == "test-mode").first()
+async def get_or_create_cms_page(db: AsyncSession) -> CMSPage:
+    result = await db.execute(
+        select(CMSPage)
+        .options(selectinload(CMSPage.translations))
+        .where(CMSPage.slug == "test-mode")
+    )
+    page = result.scalar_one_or_none()
 
     if page is not None:
         return page
@@ -333,12 +368,18 @@ def get_or_create_cms_page(db) -> CMSPage:
     ]
 
     db.add(page)
-    db.flush()
+    await db.flush()
+
     return page
 
 
-def get_or_create_banner(db) -> Banner:
-    banner = db.query(Banner).filter(Banner.slug == "home-test-mode-banner").first()
+async def get_or_create_banner(db: AsyncSession) -> Banner:
+    result = await db.execute(
+        select(Banner)
+        .options(selectinload(Banner.translations))
+        .where(Banner.slug == "home-test-mode-banner")
+    )
+    banner = result.scalar_one_or_none()
 
     if banner is not None:
         return banner
@@ -376,17 +417,26 @@ def get_or_create_banner(db) -> Banner:
     ]
 
     db.add(banner)
-    db.flush()
+    await db.flush()
+
     return banner
 
 
-def get_or_create_demo_project(
-    db,
+async def get_or_create_demo_project(
+    db: AsyncSession,
     *,
     author: User,
     category: Category,
 ) -> Project:
-    project = db.query(Project).filter(Project.slug == "demo-school-library").first()
+    result = await db.execute(
+        select(Project)
+        .options(
+            selectinload(Project.translations),
+            selectinload(Project.categories),
+        )
+        .where(Project.slug == "demo-school-library")
+    )
+    project = result.scalar_one_or_none()
 
     if project is not None:
         return project
@@ -442,17 +492,26 @@ def get_or_create_demo_project(
     project.categories = [category]
 
     db.add(project)
-    db.flush()
+    await db.flush()
+
     return project
 
 
-def get_or_create_pending_project(
-    db,
+async def get_or_create_pending_project(
+    db: AsyncSession,
     *,
     author: User,
     category: Category,
 ) -> Project:
-    project = db.query(Project).filter(Project.slug == "demo-cultural-workshop").first()
+    result = await db.execute(
+        select(Project)
+        .options(
+            selectinload(Project.translations),
+            selectinload(Project.categories),
+        )
+        .where(Project.slug == "demo-cultural-workshop")
+    )
+    project = result.scalar_one_or_none()
 
     if project is not None:
         return project
@@ -484,19 +543,24 @@ def get_or_create_pending_project(
     project.categories = [category]
 
     db.add(project)
-    db.flush()
+    await db.flush()
+
     return project
 
 
-def seed_demo_payment(db, *, backer: User, project: Project) -> PaymentAttempt:
-    payment = (
-        db.query(PaymentAttempt)
-        .filter(
+async def seed_demo_payment(
+    db: AsyncSession,
+    *,
+    backer: User,
+    project: Project,
+) -> PaymentAttempt:
+    result = await db.execute(
+        select(PaymentAttempt).where(
             PaymentAttempt.user_id == backer.id,
             PaymentAttempt.idempotency_key == "seed-demo-payment-001",
         )
-        .first()
     )
+    payment = result.scalar_one_or_none()
 
     if payment is None:
         payment = PaymentAttempt(
@@ -514,80 +578,78 @@ def seed_demo_payment(db, *, backer: User, project: Project) -> PaymentAttempt:
             confirmed_at=datetime.now(UTC),
         )
         db.add(payment)
-        db.flush()
+        await db.flush()
 
     ledger = LedgerService(db)
 
-    if not ledger.has_entries_for_payment_attempt(payment.id):
-        platform_fee = PlatformFeeService(db).calculate_fee(
+    if not await ledger.has_entries_for_payment_attempt(payment.id):
+        platform_fee = await PlatformFeeService(db).calculate_fee(
             project_type=project.project_type,
             amount=payment.amount,
         )
 
-        ledger.create_payment_entries(
+        await ledger.create_payment_entries(
             payment_attempt=payment,
             platform_fee_amount=platform_fee,
             created_by_id=backer.id,
         )
 
-    db.flush()
+    await db.flush()
+
     return payment
 
 
-def main() -> None:
-    db = SessionLocal()
+async def main() -> None:
+    async with SessionLocal() as db:
+        try:
+            roles = await seed_permissions_and_roles(db)
+            users = await seed_users(db, roles)
+            categories = await seed_categories(db)
+            await seed_static_translations(db)
 
-    try:
-        roles = seed_permissions_and_roles(db)
-        users = seed_users(db, roles)
-        categories = seed_categories(db)
-        seed_static_translations(db)
+            await get_or_create_cms_page(db)
+            await get_or_create_banner(db)
 
-        get_or_create_cms_page(db)
-        get_or_create_banner(db)
+            # Creates default platform fee rules: donation 0%, reward 5%, preorder/business 7%.
+            await PlatformFeeService(db).create_default_rules()
 
-        # Creates default platform fee rules: donation 0%, reward 5%, preorder/business 7%.
-        PlatformFeeService(db).create_default_rules()
+            author = users["author@birgefund.kg"]
+            backer = users["backer@birgefund.kg"]
 
-        author = users["author@birgefund.kg"]
-        backer = users["backer@birgefund.kg"]
+            fundraising_project = await get_or_create_demo_project(
+                db,
+                author=author,
+                category=categories["education"],
+            )
+            await get_or_create_pending_project(
+                db,
+                author=author,
+                category=categories["culture"],
+            )
 
-        fundraising_project = get_or_create_demo_project(
-            db,
-            author=author,
-            category=categories["education"],
-        )
-        get_or_create_pending_project(
-            db,
-            author=author,
-            category=categories["culture"],
-        )
+            await seed_demo_payment(
+                db,
+                backer=backer,
+                project=fundraising_project,
+            )
 
-        seed_demo_payment(
-            db,
-            backer=backer,
-            project=fundraising_project,
-        )
+            await db.commit()
 
-        db.commit()
+            print("Demo seed completed.")
+            print("")
+            print("Users:")
+            for user in DEMO_USERS:
+                print(f"- {user['email']} / {user['password']} / role={user['role']}")
+            print("")
+            print("Demo project:")
+            print("- slug=demo-school-library")
+            print("- status=fundraising")
+            print("- seeded successful payment=10000 KGS")
 
-        print("Demo seed completed.")
-        print("")
-        print("Users:")
-        for user in DEMO_USERS:
-            print(f"- {user['email']} / {user['password']} / role={user['role']}")
-        print("")
-        print("Demo project:")
-        print("- slug=demo-school-library")
-        print("- status=fundraising")
-        print("- seeded successful payment=10000 KGS")
-
-    except Exception:
-        db.rollback()
-        raise
-    finally:
-        db.close()
+        except Exception:
+            await db.rollback()
+            raise
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

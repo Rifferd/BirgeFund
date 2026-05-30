@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.complaints.model import Complaint
 from app.modules.complaints.schema import ComplaintCreate
@@ -9,50 +9,56 @@ from app.shared.enums import ComplaintStatus
 
 
 class ComplaintRepository:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    def get_by_id(self, complaint_id: int) -> Complaint | None:
+    async def get_by_id(self, complaint_id: int) -> Complaint | None:
         statement = select(Complaint).where(Complaint.id == complaint_id)
-        return self.db.scalar(statement)
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()
 
-    def list_all(self) -> list[Complaint]:
+    async def list_all(self) -> list[Complaint]:
         statement = select(Complaint).order_by(Complaint.created_at.desc(), Complaint.id.desc())
-        return list(self.db.scalars(statement).all())
+        result = await self.db.execute(statement)
+        return list(result.scalars().all())
 
-    def list_by_status(self, status: ComplaintStatus) -> list[Complaint]:
+    async def list_by_status(self, status: ComplaintStatus) -> list[Complaint]:
         statement = (
             select(Complaint)
             .where(Complaint.status == status)
             .order_by(Complaint.created_at.desc(), Complaint.id.desc())
         )
-        return list(self.db.scalars(statement).all())
+        result = await self.db.execute(statement)
+        return list(result.scalars().all())
 
-    def list_my(self, reporter_id: int) -> list[Complaint]:
+    async def list_my(self, reporter_id: int) -> list[Complaint]:
         statement = (
             select(Complaint)
             .where(Complaint.reporter_id == reporter_id)
             .order_by(Complaint.created_at.desc(), Complaint.id.desc())
         )
-        return list(self.db.scalars(statement).all())
+        result = await self.db.execute(statement)
+        return list(result.scalars().all())
 
-    def list_open(self) -> list[Complaint]:
+    async def list_open(self) -> list[Complaint]:
         statement = (
             select(Complaint)
             .where(Complaint.status.in_([ComplaintStatus.OPEN, ComplaintStatus.IN_REVIEW]))
             .order_by(Complaint.created_at.asc(), Complaint.id.asc())
         )
-        return list(self.db.scalars(statement).all())
+        result = await self.db.execute(statement)
+        return list(result.scalars().all())
 
-    def list_by_project(self, project_id: int) -> list[Complaint]:
+    async def list_by_project(self, project_id: int) -> list[Complaint]:
         statement = (
             select(Complaint)
             .where(Complaint.project_id == project_id)
             .order_by(Complaint.created_at.desc(), Complaint.id.desc())
         )
-        return list(self.db.scalars(statement).all())
+        result = await self.db.execute(statement)
+        return list(result.scalars().all())
 
-    def create(self, *, reporter_id: int, data: ComplaintCreate) -> Complaint:
+    async def create(self, *, reporter_id: int, data: ComplaintCreate) -> Complaint:
         complaint = Complaint(
             reporter_id=reporter_id,
             project_id=data.project_id,
@@ -63,12 +69,12 @@ class ComplaintRepository:
         )
 
         self.db.add(complaint)
-        self.db.flush()
-        self.db.refresh(complaint)
+        await self.db.flush()
+        await self.db.refresh(complaint)
 
         return complaint
 
-    def moderate(
+    async def moderate(
         self,
         *,
         complaint: Complaint,
@@ -84,7 +90,7 @@ class ComplaintRepository:
             complaint.reviewed_at = datetime.now(UTC)
 
         self.db.add(complaint)
-        self.db.flush()
-        self.db.refresh(complaint)
+        await self.db.flush()
+        await self.db.refresh(complaint)
 
         return complaint

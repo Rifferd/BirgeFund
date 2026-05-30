@@ -1,24 +1,39 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from app.modules.roles.model import Role
 from app.modules.users.model import User
 
 
 class UserRepository:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    def get_by_id(self, user_id: int) -> User | None:
-        statement = select(User).where(User.id == user_id)
-        return self.db.scalar(statement)
+    def _with_roles(self):
+        return selectinload(User.roles).selectinload(Role.permissions)
 
-    def get_by_email(self, email: str) -> User | None:
-        statement = select(User).where(User.email == email.lower())
-        return self.db.scalar(statement)
+    async def get_by_id(self, user_id: int) -> User | None:
+        statement = (
+            select(User)
+            .options(self._with_roles())
+            .where(User.id == user_id)
+        )
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()
 
-    def create(
+    async def get_by_email(self, email: str) -> User | None:
+        statement = (
+            select(User)
+            .options(self._with_roles())
+            .where(User.email == email.lower())
+        )
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def create(
         self,
         *,
         email: str,
@@ -34,18 +49,18 @@ class UserRepository:
         )
 
         self.db.add(user)
-        self.db.flush()
-        self.db.refresh(user)
+        await self.db.flush()
+        await self.db.refresh(user)
 
         return user
 
-    def exists_by_email(self, email: str) -> bool:
-        return self.get_by_email(email) is not None
+    async def exists_by_email(self, email: str) -> bool:
+        return await self.get_by_email(email) is not None
 
-    def update_last_login(self, user: User) -> User:
+    async def update_last_login(self, user: User) -> User:
         user.last_login_at = datetime.now(UTC)
         self.db.add(user)
-        self.db.flush()
-        self.db.refresh(user)
+        await self.db.flush()
+        await self.db.refresh(user)
 
         return user

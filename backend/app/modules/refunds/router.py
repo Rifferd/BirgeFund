@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_database_session
 from app.core.permissions import Permissions, require_permission
@@ -11,14 +11,14 @@ router = APIRouter(tags=["refunds"])
 
 
 @router.post("/payments/{payment_attempt_id}/refund", response_model=RefundRead)
-def create_test_refund(
+async def create_test_refund(
     payment_attempt_id: int,
     payload: RefundCreateRequest,
     current_user: User = Depends(require_permission(Permissions.PAYMENTS_REFUND)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> RefundRead:
     service = RefundService(db)
-    return service.create_refund(
+    return await service.create_refund(
         payment_attempt_id=payment_attempt_id,
         reason=payload.reason,
         current_user=current_user,
@@ -26,10 +26,10 @@ def create_test_refund(
 
 
 @router.get("/projects/{project_id}/refunds", response_model=list[RefundRead])
-def list_project_refunds(
+async def list_project_refunds(
     project_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[RefundRead]:
     service = RefundService(db)
-    return service.list_by_project(project_id)
+    return await service.list_by_project(project_id)
