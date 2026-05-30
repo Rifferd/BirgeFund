@@ -30,6 +30,8 @@ services:
     depends_on:
       - db
       - redis
+    ports:
+      - "127.0.0.1:8001:8000"
     volumes:
       - backend_uploads:/app/storage/uploads
     networks:
@@ -40,11 +42,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_URL: /api
+        VITE_API_BASE_URL: /api
     container_name: birgefund_frontend
     restart: unless-stopped
     depends_on:
       - backend
+    ports:
+      - "127.0.0.1:3001:80"
     networks:
       - birgefund
 
