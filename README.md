@@ -1,303 +1,155 @@
 # BirgeFund
 
-Мультиязычная production-like краудфандинговая платформа для социальных, образовательных, творческих и малых бизнес-проектов в Кыргызстане.
+BirgeFund — демонстрационная краудфандинговая платформа для Кыргызстана.
 
-Проект создаётся как демонстрационный fullstack-проект для портфолио.  
-Платформа показывает работу авторизации, ролей, модерации, админки, mock-платежей, ledger, refund, audit log и i18n.
+Проект сделан как backend/fullstack-портфолио: пользователи, роли и права, проекты, модерация, тестовые платежи, ledger, refund, жалобы, комментарии, CMS, баннеры, переводы и admin API.
 
-## Важно: TEST MODE
+## Статус проекта
 
-BirgeFund не является инвестиционной платформой, платёжной организацией, электронным кошельком или финансовым продуктом.
+Проект работает в **TEST MODE**.
 
-В demo-версии:
+Это значит:
 
-- реальные деньги не принимаются;
-- данные банковских карт не вводятся;
-- CVV, номер карты и срок карты не запрашиваются;
-- выплаты авторам не выполняются;
-- инвестиции, проценты и доходность не обещаются;
-- все платежи работают только в TEST MODE.
-
-Пользователь может только имитировать поддержку проекта через mock payment.
-
-## Основные возможности
-
-### Публичная часть
-
-- главная страница;
-- каталог проектов;
-- поиск и фильтры;
-- детальная страница проекта;
-- публичные отчёты;
-- FAQ и CMS-страницы;
-- переключение языка: `ru`, `kg`, `en`.
-
-### Пользователь
-
-- регистрация и вход;
-- профиль;
-- избранные проекты;
-- история поддержек;
-- история тестовых операций;
-- комментарии;
-- жалобы;
-- mock payment.
-
-### Автор проекта
-
-- создание проекта;
-- черновики;
-- отправка проекта на модерацию;
-- новости проекта;
-- отчёты проекта;
-- просмотр поддержавших;
-- статистика проекта.
-
-### Админка
-
-- dashboard;
-- управление пользователями;
-- управление авторами;
-- модерация проектов;
-- тестовые платежи;
-- ledger;
-- refund;
-- жалобы;
-- отчёты;
-- CMS-страницы;
-- переводы;
-- баннеры;
-- audit log;
-- настройки платформы.
+- реальные платежи не принимаются;
+- реальные деньги не списываются;
+- mock payments используются только для демонстрации;
+- финансовая история хранится через immutable ledger.
 
 ## Стек
 
-### Backend
+Backend:
 
 - Python
 - FastAPI
-- PostgreSQL
-- SQLAlchemy 2.0
+- SQLAlchemy
 - Alembic
-- Pydantic
-- Redis
-- JWT
-- pytest
-- Docker Compose
-
-### Frontend
-
-- React
-- TypeScript
-- Vite
-- TailwindCSS
-- React Router
-- TanStack Query
-- Zustand
-- React Hook Form
-- Zod
-- i18next
-
-### Инфраструктура
-
-- Docker
-- Docker Compose
-- Nginx
 - PostgreSQL
 - Redis
-- GitHub Actions
+- JWT auth
+- Docker / Docker Compose
+- Pytest
 
-## Архитектура
+Frontend:
 
-Общая схема:
+- React / Vite
+- TypeScript
+- TailwindCSS
 
-```text
-Frontend React/Vite
-        |
-        | REST API / JSON
-        v
-Backend FastAPI
-        |
-        | SQLAlchemy / Alembic
-        v
-PostgreSQL
-
-Redis
- ├─ rate limit
- ├─ cache
- └─ future background jobs
-
-Docker Compose
- ├─ backend
- ├─ frontend
- ├─ postgres
- ├─ redis
- └─ nginx
-```
-
-Backend строится по принципу:
-
-```text
-router -> service -> repository -> database
-```
-
-Где:
-
-- `router` принимает HTTP-запрос;
-- `schema` валидирует входные и выходные данные;
-- `service` содержит бизнес-логику;
-- `repository` работает с базой данных;
-- `model` описывает таблицы;
-- `permissions` проверяет права доступа;
-- `audit` записывает важные действия.
-
-## Структура проекта
-
-```text
-.
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── db/
-│   │   ├── modules/
-│   │   ├── shared/
-│   │   └── main.py
-│   ├── alembic/
-│   ├── pyproject.toml
-│   ├── alembic.ini
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   ├── layouts/
-│   │   ├── pages/
-│   │   ├── features/
-│   │   ├── entities/
-│   │   ├── shared/
-│   │   └── styles/
-│   └── Dockerfile
-├── infra/
-│   └── nginx/
-├── docs/
-├── scripts/
-├── storage/
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
-## Основные backend-модули
-
-```text
-auth
-users
-roles
-authors
-projects
-categories
-rewards
-payments
-ledger
-refunds
-comments
-complaints
-reports
-files
-notifications
-cms
-translations
-banners
-admin
-audit
-settings
-```
-
-## Финансовая логика
-
-Главное правило: финансовые суммы нельзя менять вручную.
-
-Нельзя делать так:
-
-```python
-project.collected_amount = 10000
-user.balance = 5000
-```
-
-Правильно:
-
-- успешная mock-оплата создаёт `payment_attempt`;
-- затем создаются записи в `ledger_entries`;
-- отображаемая сумма проекта считается через ledger;
-- refund создаётся обратной операцией;
-- старые финансовые операции не удаляются.
-
-Пример ledger для поддержки на 10 000 сом с комиссией 7%:
-
-```text
-PROJECT_GROSS +10000
-PLATFORM_FEE -700
-PROJECT_NET +9300
-```
-
-Для отображения:
-
-```text
-gross_collected = SUM(PROJECT_GROSS) - SUM(REFUND)
-net_amount = SUM(PROJECT_NET)
-platform_fee_amount = SUM(PLATFORM_FEE)
-```
-
-## Project state machine
-
-Статус проекта меняется только через сервис:
-
-```python
-ProjectStatusService.change_status(project, new_status, actor)
-```
-
-Каждая смена статуса записывается в audit log.
-
-Разрешённые переходы:
-
-```text
-draft -> pending_review
-pending_review -> approved
-pending_review -> rejected
-rejected -> draft
-approved -> fundraising
-fundraising -> funded
-fundraising -> failed
-fundraising -> cancelled
-fundraising -> frozen
-frozen -> fundraising
-frozen -> cancelled
-funded -> in_progress
-in_progress -> completed
-in_progress -> frozen
-```
-
-Запрещено:
-
-```text
-completed -> fundraising
-completed -> draft
-failed -> fundraising без решения админа
-cancelled -> fundraising
-```
-
-## Как запустить проект
-
-Скопировать переменные окружения:
+## Быстрый запуск
 
 ```bash
 cp .env.example .env
+
+docker compose up -d postgres redis
+docker compose run --rm backend alembic upgrade head
+docker compose run --rm backend python -m app.db.seed_demo
+docker compose up --build
 ```
 
-Запустить контейнеры:
+После запуска:
+
+- API: `http://localhost:8000`
+- Swagger UI: `http://localhost:8000/docs`
+- Healthcheck: `http://localhost:8000/api/health`
+
+## Demo-данные
+
+Seed создаёт пользователей, роли, permissions, категории, CMS-страницу, баннер, переводы, demo-проекты и тестовую оплату.
+
+Подробнее: [docs/DEMO.md](docs/DEMO.md)
+
+Основные demo-аккаунты:
+
+| Роль | Email | Пароль |
+|---|---|---|
+| Super Admin | `admin@birgefund.kg` | `AdminPass123!` |
+| Moderator | `moderator@birgefund.kg` | `ModeratorPass123!` |
+| Finance Manager | `finance@birgefund.kg` | `FinancePass123!` |
+| Content Manager | `content@birgefund.kg` | `ContentPass123!` |
+| Author | `author@birgefund.kg` | `AuthorPass123!` |
+| Backer | `backer@birgefund.kg` | `BackerPass123!` |
+
+## Основные возможности
+
+### Auth + RBAC
+
+- регистрация;
+- login;
+- refresh token rotation;
+- `/me`;
+- роли;
+- permissions;
+- admin role management.
+
+### Projects
+
+- создание проекта;
+- мультиязычные описания `ru/kg/en`;
+- категории;
+- статусы проекта;
+- state machine;
+- модерация;
+- audit log.
+
+### Payments + Ledger
+
+- mock payment в TEST MODE;
+- idempotency key;
+- подтверждение оплаты;
+- platform fee rules;
+- ledger entries;
+- project financial summary;
+- refund.
+
+### Community
+
+- комментарии;
+- жалобы;
+- модерация жалоб;
+- внутренние уведомления.
+
+### CMS
+
+- CMS pages;
+- banners;
+- static translations dictionary.
+
+### Admin API
+
+- dashboard;
+- users management;
+- projects moderation;
+- payments and ledger;
+- refunds;
+- reports moderation;
+- complaints moderation;
+- audit logs;
+- roles and permissions.
+
+## Полезные команды
+
+Применить миграции:
 
 ```bash
-docker compose up --build
+docker compose run --rm backend alembic upgrade head
+```
+
+Создать новую миграцию:
+
+```bash
+docker compose run --rm backend alembic revision --autogenerate -m "migration message"
+```
+
+Запустить тесты:
+
+```bash
+docker compose run --rm backend pytest
+```
+
+Запустить demo seed:
+
+```bash
+docker compose run --rm backend python -m app.db.seed_demo
 ```
 
 Остановить контейнеры:
@@ -306,229 +158,52 @@ docker compose up --build
 docker compose down
 ```
 
-Остановить контейнеры и удалить volumes:
+## Архитектура
+
+Документация проекта находится в папке `docs/`.
+
+Основные документы:
+
+- `docs/API.md`
+- `docs/API_QUICK_REFERENCE.md`
+- `docs/ARCHITECTURE.md`
+- `docs/TEST_MODE.md`
+- `docs/DEMO.md`
+- `docs/BACKEND_CHECKLIST.md`
+
+## Важное про финансы
+
+В проекте нет поля вида `project.collected_amount`, которое вручную увеличивается при оплате.
+
+Суммы считаются через `ledger_entries`:
+
+- `PROJECT_GROSS`
+- `PLATFORM_FEE`
+- `PROJECT_NET`
+- `REFUND`
+- `ADMIN_ADJUSTMENT`
+
+Это делает финансовую историю проверяемой и удобной для audit/debug.
+
+## Git workflow
+
+Основная ветка разработки:
 
 ```bash
-docker compose down -v
+develop
 ```
 
-## Миграции
-
-Создать миграцию:
+Рекомендуемый порядок:
 
 ```bash
-docker compose exec backend alembic revision --autogenerate -m "init"
+git status
+git add .
+git commit -m "type(scope): short description"
+git push
 ```
 
-Применить миграции:
+Пример:
 
 ```bash
-docker compose exec backend alembic upgrade head
+git commit -m "feat(payments): confirm mock payment with ledger entries"
 ```
-
-Откатить последнюю миграцию:
-
-```bash
-docker compose exec backend alembic downgrade -1
-```
-
-## Seed data
-
-Создать тестовые данные:
-
-```bash
-docker compose exec backend python -m app.db.init_db
-```
-
-Seed должен создать:
-
-- demo-пользователей;
-- роли и permissions;
-- категории;
-- проекты;
-- reward-пакеты;
-- тестовые платежи;
-- ledger entries;
-- жалобы;
-- отчёты;
-- переводы.
-
-## Demo-аккаунты
-
-После запуска seed data доступны demo-аккаунты:
-
-| Роль | Email |
-|---|---|
-| Super Admin | admin@example.com |
-| Moderator | moderator@example.com |
-| Author | author@example.com |
-| User | user@example.com |
-| Financial Manager | finance@example.com |
-| Content Manager | content@example.com |
-
-Пароль задаётся в seed-скрипте. Для demo можно использовать единый пароль:
-
-```text
-DemoPass123!
-```
-
-## Основные API-разделы
-
-### Auth
-
-```text
-POST /api/auth/register
-POST /api/auth/login
-POST /api/auth/logout
-POST /api/auth/refresh
-GET  /api/auth/me
-```
-
-### Projects
-
-```text
-GET    /api/projects
-GET    /api/projects/{slug}
-POST   /api/projects
-PATCH  /api/projects/{id}
-POST   /api/projects/{id}/submit-review
-GET    /api/projects/{id}/updates
-GET    /api/projects/{id}/reports
-```
-
-### Mock payments
-
-```text
-POST /api/payments/mock/create
-POST /api/payments/mock/confirm
-GET  /api/payments/my
-POST /api/payments/{id}/refund
-```
-
-### Admin
-
-```text
-GET   /api/admin/dashboard
-GET   /api/admin/users
-GET   /api/admin/projects
-GET   /api/admin/payments
-GET   /api/admin/ledger
-GET   /api/admin/complaints
-GET   /api/admin/reports
-GET   /api/admin/audit-logs
-```
-
-## Demo-сценарии проверки
-
-Проверить проект можно по таким сценариям:
-
-1. Зарегистрироваться.
-2. Войти в аккаунт.
-3. Создать проект как автор.
-4. Отправить проект на модерацию.
-5. Одобрить проект через админку.
-6. Открыть публичную страницу проекта.
-7. Поддержать проект через mock payment.
-8. Проверить, что реальные платёжные данные не вводятся.
-9. Проверить создание `payment_attempt`.
-10. Проверить записи в `ledger_entries`.
-11. Сделать test refund с причиной.
-12. Проверить audit log.
-13. Добавить отчёт проекта.
-14. Подать жалобу.
-15. Обработать жалобу в админке.
-16. Переключить язык `ru / kg / en`.
-
-## Тесты
-
-Backend-тесты:
-
-```bash
-docker compose exec backend pytest
-```
-
-Frontend build:
-
-```bash
-docker compose exec frontend npm run build
-```
-
-Frontend lint:
-
-```bash
-docker compose exec frontend npm run lint
-```
-
-## Правила разработки
-
-### Backend
-
-- бизнес-логику писать в `service.py`;
-- работу с БД держать в `repository.py`;
-- HTTP-логику держать в `router.py`;
-- Pydantic-схемы держать в `schema.py`;
-- права доступа проверять через permissions;
-- важные действия писать в audit log.
-
-### Frontend
-
-- все тексты интерфейса через i18n;
-- русский язык — fallback;
-- технические enum-значения не показывать пользователю;
-- опасные действия подтверждать через confirm modal;
-- refund только с причиной;
-- финансовые операции нельзя удалять или редактировать в UI;
-- TEST MODE показывать везде, где есть платежи.
-
-## Запрещённые формулировки
-
-В интерфейсе нельзя писать:
-
-- инвестируйте и получите доход;
-- гарантированный доход;
-- получите прибыль;
-- пассивный доход;
-- вернём вклад;
-- безрисковая инвестиция;
-- дивиденды;
-- проценты.
-
-Можно писать:
-
-- поддержать проект;
-- помочь автору запустить проект;
-- получить вознаграждение;
-- предзаказать товар;
-- получить отчёт;
-- поддержать социальную инициативу.
-
-## Что переносится во второй этап
-
-Во второй этап переносится:
-
-- реальные платежи;
-- интеграция с банком;
-- вывод денег авторам;
-- investment/profit-sharing;
-- Telegram notifications;
-- Prometheus/Grafana;
-- Sentry;
-- сложный trust score;
-- полная история входов;
-- сложная KYC-проверка;
-- автоматическая проверка документов;
-- сложный SEO canonical;
-- реальная email-рассылка.
-
-## Статус проекта
-
-Проект находится в разработке.
-
-Первый этап:
-
-- структура репозитория;
-- базовый README;
-- документация;
-- Docker Compose;
-- backend foundation;
-- frontend foundation.
