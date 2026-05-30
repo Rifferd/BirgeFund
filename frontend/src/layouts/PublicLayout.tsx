@@ -82,9 +82,9 @@ export function PublicLayout() {
               {theme === "light" ? "Dark" : "Light"}
             </Button>
 
-            <Link to={routes.login}>
+            <Link to={isAuthenticated ? routes.dashboard : routes.login}>
               <Button type="button" variant="secondary">
-                {t("navigation.login")}
+                {isAuthenticated ? "Личный кабинет" : t("navigation.login")}
               </Button>
             </Link>
 
@@ -152,16 +152,26 @@ export function PublicLayout() {
               ))}
 
               {isAuthenticated ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    logoutMutation.mutate();
-                    closeMobileMenu();
-                  }}
-                  className="block min-h-11 rounded-2xl px-4 py-3 text-left text-sm font-black text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  Выйти
-                </button>
+                <>
+                  <Link
+                    to={routes.dashboard}
+                    onClick={closeMobileMenu}
+                    className="block min-h-11 rounded-2xl px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    Личный кабинет
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logoutMutation.mutate();
+                      closeMobileMenu();
+                    }}
+                    className="block min-h-11 w-full rounded-2xl px-4 py-3 text-left text-sm font-black text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    Выйти
+                  </button>
+                </>
               ) : (
                 <Link
                   to={routes.login}
