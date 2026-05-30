@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.modules.audit.service import AuditLogService
@@ -25,31 +25,31 @@ class ComplaintAuditActions:
 
 
 class ComplaintService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.complaints = ComplaintRepository(db)
         self.projects = ProjectRepository(db)
         self.comments = CommentRepository(db)
         self.audit = AuditLogService(db)
 
-    def create(self, *, current_user: User, data: ComplaintCreate) -> Complaint:
-        project = self.projects.get_by_id(data.project_id)
+    async def create(self, *, current_user: User, data: ComplaintCreate) -> Complaint:
+        project = await self.projects.get_by_id(data.project_id)
 
         if project is None or project.status not in PUBLIC_PROJECT_STATUSES:
             raise NotFoundException("Проект не найден")
 
         if data.comment_id is not None:
-            comment = self.comments.get_by_id(data.comment_id)
+            comment = await self.comments.get_by_id(data.comment_id)
 
             if comment is None or comment.project_id != data.project_id:
                 raise BadRequestException("Комментарий не относится к этому проекту")
 
-        complaint = self.complaints.create(
+        complaint = await self.complaints.create(
             reporter_id=current_user.id,
             data=data,
         )
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action=ComplaintAuditActions.COMPLAINT_CREATED,
             entity_type="complaint",
             entity_id=complaint.id,
@@ -62,39 +62,39 @@ class ComplaintService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(complaint)
+        await self.db.commit()
+        await self.db.refresh(complaint)
 
         return complaint
 
-    def list_all(self, status: ComplaintStatus | None = None) -> list[Complaint]:
+    async def list_all(self, status: ComplaintStatus | None = None) -> list[Complaint]:
         if status is None:
-            return self.complaints.list_all()
+            return await self.complaints.list_all()
 
-        return self.complaints.list_by_status(status)
+        return await self.complaints.list_by_status(status)
 
-    def list_my(self, current_user: User) -> list[Complaint]:
-        return self.complaints.list_my(current_user.id)
+    async def list_my(self, current_user: User) -> list[Complaint]:
+        return await self.complaints.list_my(current_user.id)
 
-    def list_by_project(self, project_id: int) -> list[Complaint]:
-        project = self.projects.get_by_id(project_id)
+    async def list_by_project(self, project_id: int) -> list[Complaint]:
+        project = await self.projects.get_by_id(project_id)
 
         if project is None:
             raise NotFoundException("Проект не найден")
 
-        return self.complaints.list_by_project(project_id)
+        return await self.complaints.list_by_project(project_id)
 
-    def list_open(self) -> list[Complaint]:
-        return self.complaints.list_open()
+    async def list_open(self) -> list[Complaint]:
+        return await self.complaints.list_open()
 
-    def moderate(
+    async def moderate(
         self,
         *,
         complaint_id: int,
         current_user: User,
         data: ComplaintModerationRequest,
     ) -> Complaint:
-        complaint = self._get_complaint(complaint_id)
+        complaint = await self._get_complaint(complaint_id)
         old_status = complaint.status
 
         if old_status in {ComplaintStatus.RESOLVED, ComplaintStatus.REJECTED}:
@@ -106,7 +106,7 @@ class ComplaintService:
         if data.status in {ComplaintStatus.RESOLVED, ComplaintStatus.REJECTED} and not data.moderator_comment:
             raise BadRequestException("Для закрытия жалобы нужен комментарий модератора")
 
-        complaint = self.complaints.moderate(
+        complaint = await self.complaints.moderate(
             complaint=complaint,
             status=data.status,
             moderator_id=current_user.id,
@@ -114,16 +114,16 @@ class ComplaintService:
         )
 
         if data.status == ComplaintStatus.RESOLVED and complaint.comment_id is not None:
-            comment = self.comments.get_by_id(complaint.comment_id)
+            comment = await self.comments.get_by_id(complaint.comment_id)
 
             if comment is not None and not comment.is_hidden:
-                self.comments.moderate(
+                await self.comments.moderate(
                     comment=comment,
                     is_hidden=True,
                     hidden_reason=data.moderator_comment or "Комментарий скрыт по жалобе",
                 )
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action=ComplaintAuditActions.COMPLAINT_STATUS_CHANGED,
             entity_type="complaint",
             entity_id=complaint.id,
@@ -136,13 +136,13 @@ class ComplaintService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(complaint)
+        await self.db.commit()
+        await self.db.refresh(complaint)
 
         return complaint
 
-    def _get_complaint(self, complaint_id: int) -> Complaint:
-        complaint = self.complaints.get_by_id(complaint_id)
+    async def _get_complaint(self, complaint_id: int) -> Complaint:
+        complaint = await self.complaints.get_by_id(complaint_id)
 
         if complaint is None:
             raise NotFoundException("Жалоба не найдена")
