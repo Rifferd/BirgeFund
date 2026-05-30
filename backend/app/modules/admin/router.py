@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_database_session
 from app.core.permissions import Permissions, require_any_permission, require_permission
@@ -35,42 +35,42 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.get("/dashboard", response_model=AdminDashboardStats)
-def get_admin_dashboard(
+async def get_admin_dashboard(
     current_user: User = Depends(require_permission(Permissions.ADMIN_DASHBOARD)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> AdminDashboardStats:
     service = AdminDashboardService(db)
-    return service.get_stats()
+    return await service.get_stats()
 
 
 @router.get("/users", response_model=list[AdminUserRead])
-def list_admin_users(
+async def list_admin_users(
     current_user: User = Depends(require_permission(Permissions.USERS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[AdminUserRead]:
     service = AdminUserService(db)
-    return service.list_users()
+    return await service.list_users()
 
 
 @router.get("/users/{user_id}", response_model=AdminUserRead)
-def get_admin_user(
+async def get_admin_user(
     user_id: int,
     current_user: User = Depends(require_permission(Permissions.USERS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> AdminUserRead:
     service = AdminUserService(db)
-    return service.get_user(user_id)
+    return await service.get_user(user_id)
 
 
 @router.patch("/users/{user_id}", response_model=AdminUserRead)
-def update_admin_user(
+async def update_admin_user(
     user_id: int,
     payload: AdminUserUpdate,
     current_user: User = Depends(require_permission(Permissions.USERS_UPDATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> AdminUserRead:
     service = AdminUserService(db)
-    return service.update_user(
+    return await service.update_user(
         user_id=user_id,
         data=payload,
         current_user=current_user,
@@ -78,14 +78,14 @@ def update_admin_user(
 
 
 @router.patch("/users/{user_id}/block", response_model=AdminUserRead)
-def block_admin_user(
+async def block_admin_user(
     user_id: int,
     payload: AdminUserBlockRequest,
     current_user: User = Depends(require_permission(Permissions.USERS_BLOCK)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> AdminUserRead:
     service = AdminUserService(db)
-    return service.block_user(
+    return await service.block_user(
         user_id=user_id,
         reason=payload.reason,
         current_user=current_user,
@@ -93,14 +93,14 @@ def block_admin_user(
 
 
 @router.patch("/users/{user_id}/unblock", response_model=AdminUserRead)
-def unblock_admin_user(
+async def unblock_admin_user(
     user_id: int,
     payload: AdminUserBlockRequest,
     current_user: User = Depends(require_permission(Permissions.USERS_BLOCK)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> AdminUserRead:
     service = AdminUserService(db)
-    return service.unblock_user(
+    return await service.unblock_user(
         user_id=user_id,
         reason=payload.reason,
         current_user=current_user,
@@ -108,27 +108,27 @@ def unblock_admin_user(
 
 
 @router.get("/projects", response_model=list[ProjectRead])
-def list_admin_projects(
+async def list_admin_projects(
     status: ProjectStatus | None = Query(default=None),
     current_user: User = Depends(require_permission(Permissions.PROJECTS_MODERATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[ProjectRead]:
     service = AdminProjectService(db)
-    return service.list_projects(status=status)
+    return await service.list_projects(status=status)
 
 
 @router.get("/projects/{project_id}", response_model=ProjectRead)
-def get_admin_project(
+async def get_admin_project(
     project_id: int,
     current_user: User = Depends(require_permission(Permissions.PROJECTS_MODERATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> ProjectRead:
     service = AdminProjectService(db)
-    return service.get_project(project_id)
+    return await service.get_project(project_id)
 
 
 @router.patch("/projects/{project_id}/status", response_model=ProjectRead)
-def change_admin_project_status(
+async def change_admin_project_status(
     project_id: int,
     payload: ProjectStatusChangeRequest,
     current_user: User = Depends(
@@ -139,10 +139,10 @@ def change_admin_project_status(
             ]
         )
     ),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> ProjectRead:
     service = AdminProjectService(db)
-    return service.change_status(
+    return await service.change_status(
         project_id=project_id,
         new_status=payload.status,
         reason=payload.reason,
@@ -151,33 +151,33 @@ def change_admin_project_status(
 
 
 @router.get("/payments", response_model=list[PaymentAttemptRead])
-def list_admin_payments(
+async def list_admin_payments(
     current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[PaymentAttemptRead]:
     service = AdminFinanceService(db)
-    return service.list_payments()
+    return await service.list_payments()
 
 
 @router.get("/payments/{payment_id}", response_model=PaymentAttemptRead)
-def get_admin_payment(
+async def get_admin_payment(
     payment_id: int,
     current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> PaymentAttemptRead:
     service = AdminFinanceService(db)
-    return service.get_payment(payment_id)
+    return await service.get_payment(payment_id)
 
 
 @router.post("/payments/{payment_id}/refund", response_model=RefundRead)
-def create_admin_refund(
+async def create_admin_refund(
     payment_id: int,
     payload: RefundCreateRequest,
     current_user: User = Depends(require_permission(Permissions.PAYMENTS_REFUND)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> RefundRead:
     service = AdminFinanceService(db)
-    return service.create_refund(
+    return await service.create_refund(
         payment_attempt_id=payment_id,
         reason=payload.reason,
         current_user=current_user,
@@ -185,56 +185,56 @@ def create_admin_refund(
 
 
 @router.get("/ledger/projects/{project_id}", response_model=list[LedgerEntryRead])
-def list_admin_project_ledger(
+async def list_admin_project_ledger(
     project_id: int,
     current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[LedgerEntryRead]:
     service = AdminFinanceService(db)
-    return service.list_project_ledger(project_id)
+    return await service.list_project_ledger(project_id)
 
 
 @router.get("/ledger/projects/{project_id}/summary", response_model=ProjectLedgerSummary)
-def get_admin_project_ledger_summary(
+async def get_admin_project_ledger_summary(
     project_id: int,
     current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> ProjectLedgerSummary:
     service = AdminFinanceService(db)
-    return service.get_project_ledger_summary(project_id)
+    return await service.get_project_ledger_summary(project_id)
 
 
 @router.get("/refunds", response_model=list[RefundRead])
-def list_admin_refunds(
+async def list_admin_refunds(
     current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[RefundRead]:
     service = AdminFinanceService(db)
-    return service.list_refunds()
+    return await service.list_refunds()
 
 
 @router.get("/projects/{project_id}/refunds", response_model=list[RefundRead])
-def list_admin_project_refunds(
+async def list_admin_project_refunds(
     project_id: int,
     current_user: User = Depends(require_permission(Permissions.PAYMENTS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[RefundRead]:
     service = AdminFinanceService(db)
-    return service.list_project_refunds(project_id)
+    return await service.list_project_refunds(project_id)
 
 
 
 @router.get("/audit-logs", response_model=list[AuditLogRead])
-def list_admin_audit_logs(
+async def list_admin_audit_logs(
     limit: int = Query(default=100, ge=1, le=500),
     entity_type: str | None = Query(default=None),
     entity_id: str | None = Query(default=None),
     actor_id: int | None = Query(default=None),
     current_user: User = Depends(require_permission(Permissions.AUDIT_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[AuditLogRead]:
     service = AdminAuditLogService(db)
-    return service.list_logs(
+    return await service.list_logs(
         limit=limit,
         entity_type=entity_type,
         entity_id=entity_id,
@@ -243,59 +243,59 @@ def list_admin_audit_logs(
 
 
 @router.get("/audit-logs/{audit_log_id}", response_model=AuditLogRead)
-def get_admin_audit_log(
+async def get_admin_audit_log(
     audit_log_id: int,
     current_user: User = Depends(require_permission(Permissions.AUDIT_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> AuditLogRead:
     service = AdminAuditLogService(db)
-    return service.get_log(audit_log_id)
+    return await service.get_log(audit_log_id)
 
 
 
 @router.get("/reports", response_model=list[ProjectReportRead])
-def list_admin_reports(
+async def list_admin_reports(
     status: ReportStatus | None = Query(default=None),
     current_user: User = Depends(require_permission(Permissions.REPORTS_MODERATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[ProjectReportRead]:
     service = AdminModerationService(db)
-    return service.list_reports(status=status)
+    return await service.list_reports(status=status)
 
 
 @router.patch("/reports/{report_id}/status", response_model=ProjectReportRead)
-def moderate_admin_report(
+async def moderate_admin_report(
     report_id: int,
     payload: ProjectReportModerationRequest,
     current_user: User = Depends(require_permission(Permissions.REPORTS_MODERATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> ProjectReportRead:
     service = AdminModerationService(db)
-    return service.moderate_report(
+    return await service.moderate_report(
         report_id=report_id,
         payload=payload,
     )
 
 
 @router.get("/complaints", response_model=list[ComplaintRead])
-def list_admin_complaints(
+async def list_admin_complaints(
     status: ComplaintStatus | None = Query(default=None),
     current_user: User = Depends(require_permission(Permissions.COMPLAINTS_MANAGE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[ComplaintRead]:
     service = AdminModerationService(db)
-    return service.list_complaints(status=status)
+    return await service.list_complaints(status=status)
 
 
 @router.patch("/complaints/{complaint_id}/status", response_model=ComplaintRead)
-def moderate_admin_complaint(
+async def moderate_admin_complaint(
     complaint_id: int,
     payload: ComplaintModerationRequest,
     current_user: User = Depends(require_permission(Permissions.COMPLAINTS_MANAGE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> ComplaintRead:
     service = AdminModerationService(db)
-    return service.moderate_complaint(
+    return await service.moderate_complaint(
         complaint_id=complaint_id,
         current_user=current_user,
         payload=payload,
@@ -304,51 +304,51 @@ def moderate_admin_complaint(
 
 
 @router.get("/permissions", response_model=list[PermissionRead])
-def list_admin_permissions(
+async def list_admin_permissions(
     current_user: User = Depends(require_permission(Permissions.USERS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[PermissionRead]:
     service = AdminRoleService(db)
-    return service.list_permissions()
+    return await service.list_permissions()
 
 
 @router.post("/permissions/seed", response_model=AdminSeedPermissionsResponse)
-def seed_admin_permissions(
+async def seed_admin_permissions(
     current_user: User = Depends(require_permission(Permissions.USERS_UPDATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> AdminSeedPermissionsResponse:
     service = AdminRoleService(db)
-    return service.seed_permissions(current_user)
+    return await service.seed_permissions(current_user)
 
 
 @router.get("/roles", response_model=list[RoleRead])
-def list_admin_roles(
+async def list_admin_roles(
     current_user: User = Depends(require_permission(Permissions.USERS_READ)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[RoleRead]:
     service = AdminRoleService(db)
-    return service.list_roles()
+    return await service.list_roles()
 
 
 @router.post("/roles", response_model=RoleRead)
-def create_admin_role(
+async def create_admin_role(
     payload: RoleCreate,
     current_user: User = Depends(require_permission(Permissions.USERS_UPDATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> RoleRead:
     service = AdminRoleService(db)
-    return service.create_role(data=payload, current_user=current_user)
+    return await service.create_role(data=payload, current_user=current_user)
 
 
 @router.post("/users/{user_id}/roles", response_model=AdminUserRead)
-def assign_admin_role_to_user(
+async def assign_admin_role_to_user(
     user_id: int,
     payload: AdminAssignRoleRequest,
     current_user: User = Depends(require_permission(Permissions.USERS_UPDATE)),
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> AdminUserRead:
     service = AdminRoleService(db)
-    return service.assign_role_to_user(
+    return await service.assign_role_to_user(
         user_id=user_id,
         role_name=payload.role_name,
         current_user=current_user,
