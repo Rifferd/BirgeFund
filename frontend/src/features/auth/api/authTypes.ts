@@ -9,6 +9,12 @@ export type AuthTokenResponse = {
   token_type?: string;
 };
 
+export type CurrentUserRole = {
+  id?: number;
+  name: string;
+  title?: string | null;
+};
+
 export type CurrentUser = {
   id: number;
   email: string;
@@ -17,4 +23,8 @@ export type CurrentUser = {
   is_active?: boolean;
   is_verified?: boolean;
   is_blocked?: boolean;
+
+  roles?: CurrentUserRole[];
+  role_names?: string[];
+  permissions?: string[];
 };

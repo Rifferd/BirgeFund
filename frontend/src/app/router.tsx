@@ -1,12 +1,15 @@
 import { createBrowserRouter } from "react-router-dom";
 
+import { AdminProtectedRoute } from "@/features/auth/components/AdminProtectedRoute";
 import { ProtectedRoute } from "@/features/auth/components/ProtectedRoute";
 
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PublicLayout } from "@/layouts/PublicLayout";
 
+import { AccessDeniedPage } from "@/pages/AccessDeniedPage";
 import { ErrorPage } from "@/pages/ErrorPage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
 
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
@@ -77,6 +80,14 @@ export const router = createBrowserRouter([
         path: "pages/:slug",
         element: <CMSPage />,
       },
+      {
+        path: "403",
+        element: <AccessDeniedPage />,
+      },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
     ],
   },
   {
@@ -112,6 +123,10 @@ export const router = createBrowserRouter([
         path: "settings",
         element: <SettingsPage />,
       },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
     ],
   },
   {
@@ -139,14 +154,18 @@ export const router = createBrowserRouter([
         path: "projects/:projectId/manage",
         element: <AuthorProjectManagePage />,
       },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
     ],
   },
   {
     path: "admin",
     element: (
-      <ProtectedRoute>
+      <AdminProtectedRoute>
         <AdminLayout />
-      </ProtectedRoute>
+      </AdminProtectedRoute>
     ),
     errorElement: <ErrorPage />,
     children: [
@@ -193,6 +212,10 @@ export const router = createBrowserRouter([
       {
         path: "translations",
         element: <AdminTranslationsPage />,
+      },
+      {
+        path: "*",
+        element: <NotFoundPage />,
       },
     ],
   },
