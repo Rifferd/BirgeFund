@@ -1,4 +1,5 @@
 import { useAdminRefunds } from "@/features/admin/hooks/useAdminRefunds";
+import { useClientPagination } from "@/shared/hooks/useClientPagination";
 import { formatDate } from "@/shared/lib/formatDate";
 import { formatMoney } from "@/shared/lib/formatMoney";
 import {
@@ -9,6 +10,7 @@ import {
   LoadingState,
   StatusBadge,
   Table,
+  Pagination,
 } from "@/shared/ui";
 
 function getRefundTone(status?: string) {
@@ -21,6 +23,7 @@ function getRefundTone(status?: string) {
 export function AdminRefundsPage() {
   const refundsQuery = useAdminRefunds();
   const refunds = refundsQuery.data ?? [];
+  const pagination = useClientPagination(refunds, { initialPageSize: 10 });
 
   return (
     <div className="space-y-5">
@@ -63,7 +66,7 @@ export function AdminRefundsPage() {
               </Table.Head>
 
               <Table.Body>
-                {refunds.map((refund) => (
+                {pagination.items.map((refund) => (
                   <Table.Row key={refund.id}>
                     <Table.Cell className="font-black">#{refund.id}</Table.Cell>
                     <Table.Cell>#{refund.payment_attempt_id}</Table.Cell>
@@ -86,7 +89,7 @@ export function AdminRefundsPage() {
           </div>
 
           <div className="grid gap-4 xl:hidden">
-            {refunds.map((refund) => (
+            {pagination.items.map((refund) => (
               <Card key={refund.id}>
                 <CardContent>
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -115,6 +118,22 @@ export function AdminRefundsPage() {
           </div>
         </>
       ) : null}
+      {!refundsQuery.isLoading && !refundsQuery.isError && refunds.length > 0 ? (
+        <Pagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          canPrev={pagination.canPrev}
+          canNext={pagination.canNext}
+          onPrev={pagination.prevPage}
+          onNext={pagination.nextPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
+      ) : null}
+
     </div>
   );
 }

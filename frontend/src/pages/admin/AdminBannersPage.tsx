@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { AdminBanner } from "@/features/admin/api/adminTypes";
 import { BannerModal } from "@/features/admin/components/BannerModal";
 import { useAdminBanners } from "@/features/admin/hooks/useAdminBanners";
+import { useClientPagination } from "@/shared/hooks/useClientPagination";
 import { formatDate } from "@/shared/lib/formatDate";
 import {
   Button,
@@ -13,6 +14,7 @@ import {
   LoadingState,
   StatusBadge,
   Table,
+  Pagination,
 } from "@/shared/ui";
 
 function getBannerTitle(banner: AdminBanner) {
@@ -38,6 +40,7 @@ function getPlacementLabel(placement: string) {
 export function AdminBannersPage() {
   const bannersQuery = useAdminBanners();
   const banners = bannersQuery.data ?? [];
+  const pagination = useClientPagination(banners, { initialPageSize: 10 });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBanner, setSelectedBanner] = useState<AdminBanner | null>(null);
@@ -100,7 +103,7 @@ export function AdminBannersPage() {
               </Table.Head>
 
               <Table.Body>
-                {banners.map((banner) => (
+                {pagination.items.map((banner) => (
                   <Table.Row key={banner.id}>
                     <Table.Cell className="font-black">#{banner.id}</Table.Cell>
                     <Table.Cell className="font-black">{getBannerTitle(banner)}</Table.Cell>
@@ -129,7 +132,7 @@ export function AdminBannersPage() {
           </div>
 
           <div className="grid gap-4 xl:hidden">
-            {banners.map((banner) => (
+            {pagination.items.map((banner) => (
               <Card key={banner.id}>
                 <CardContent>
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -160,6 +163,22 @@ export function AdminBannersPage() {
             ))}
           </div>
         </>
+      ) : null}
+
+      {!bannersQuery.isLoading && !bannersQuery.isError && banners.length > 0 ? (
+        <Pagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          canPrev={pagination.canPrev}
+          canNext={pagination.canNext}
+          onPrev={pagination.prevPage}
+          onNext={pagination.nextPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
       ) : null}
 
       <BannerModal

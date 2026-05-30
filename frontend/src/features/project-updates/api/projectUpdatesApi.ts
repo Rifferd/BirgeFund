@@ -10,5 +10,5 @@ export async function getProjectUpdates(projectId: number | string) {
     },
   );
 
-  return normalizeApiList(payload);
+  return normalizeApiList<ProjectUpdate>(payload);
 }

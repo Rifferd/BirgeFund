@@ -10,5 +10,5 @@ export async function getProjectRewards(projectId: number | string) {
     },
   );
 
-  return normalizeApiList(payload);
+  return normalizeApiList<ProjectReward>(payload);
 }

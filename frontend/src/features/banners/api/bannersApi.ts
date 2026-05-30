@@ -10,5 +10,5 @@ export async function getBanners() {
     },
   );
 
-  return normalizeApiList(payload);
+  return normalizeApiList<Banner>(payload);
 }

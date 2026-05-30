@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import type { AdminReport } from "@/features/admin/api/adminTypes";
 import { ReportModerationModal } from "@/features/admin/components/ReportModerationModal";
 import { useAdminReports } from "@/features/admin/hooks/useAdminReports";
+import { useClientPagination } from "@/shared/hooks/useClientPagination";
 import { formatDate } from "@/shared/lib/formatDate";
 import {
   Button,
@@ -15,6 +16,7 @@ import {
   Select,
   StatusBadge,
   Table,
+  Pagination,
 } from "@/shared/ui";
 
 function getReportTone(status: string) {
@@ -38,6 +40,7 @@ export function AdminReportsPage() {
 
   const reportsQuery = useAdminReports(params);
   const reports = reportsQuery.data ?? [];
+  const pagination = useClientPagination(reports, { initialPageSize: 10 });
 
   return (
     <div className="space-y-5">
@@ -103,7 +106,7 @@ export function AdminReportsPage() {
               </Table.Head>
 
               <Table.Body>
-                {reports.map((report) => (
+                {pagination.items.map((report) => (
                   <Table.Row key={report.id}>
                     <Table.Cell className="font-black">#{report.id}</Table.Cell>
                     <Table.Cell>#{report.project_id}</Table.Cell>
@@ -131,7 +134,7 @@ export function AdminReportsPage() {
           </div>
 
           <div className="grid gap-4 xl:hidden">
-            {reports.map((report) => (
+            {pagination.items.map((report) => (
               <Card key={report.id}>
                 <CardContent>
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -160,6 +163,22 @@ export function AdminReportsPage() {
             ))}
           </div>
         </>
+      ) : null}
+
+      {!reportsQuery.isLoading && !reportsQuery.isError && reports.length > 0 ? (
+        <Pagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          canPrev={pagination.canPrev}
+          canNext={pagination.canNext}
+          onPrev={pagination.prevPage}
+          onNext={pagination.nextPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
       ) : null}
 
       <ReportModerationModal

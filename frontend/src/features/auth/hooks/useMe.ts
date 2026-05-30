@@ -4,12 +4,13 @@ import { getMe } from "@/features/auth/api/authApi";
 import { useAuthStore } from "@/features/auth/model/authStore";
 
 export function useMe() {
+  const accessToken = useAuthStore((state) => state.accessToken);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const setUser = useAuthStore((state) => state.setUser);
   const clearSession = useAuthStore((state) => state.clearSession);
 
   return useQuery({
-    queryKey: ["auth", "me"],
+    queryKey: ["auth", "me", accessToken],
     queryFn: async () => {
       try {
         const user = await getMe();
@@ -20,7 +21,8 @@ export function useMe() {
         throw error;
       }
     },
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && Boolean(accessToken),
     retry: false,
+    staleTime: 0,
   });
 }

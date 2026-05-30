@@ -21,7 +21,8 @@ import { useLogout } from "@/features/auth/hooks/useLogout";
 import { routes } from "@/shared/config/routes";
 import { cn } from "@/shared/lib/cn";
 import { isRouteActive } from "@/shared/lib/navigation";
-import { Button, StatusBadge } from "@/shared/ui";
+import { Button,
+  LoadingState, StatusBadge } from "@/shared/ui";
 
 const adminNavItems = [
   { to: routes.admin, label: "Dashboard", icon: LayoutDashboard },

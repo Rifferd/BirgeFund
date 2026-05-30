@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import type { AdminUser } from "@/features/admin/api/adminTypes";
 import { UserActionModal } from "@/features/admin/components/UserActionModal";
 import { useAdminUsers } from "@/features/admin/hooks/useAdminUsers";
+import { useClientPagination } from "@/shared/hooks/useClientPagination";
 import { formatDate } from "@/shared/lib/formatDate";
 import {
   Button,
@@ -12,6 +13,7 @@ import {
   ErrorState,
   Input,
   LoadingState,
+  Pagination,
   Select,
   StatusBadge,
   Table,
@@ -56,6 +58,7 @@ export function AdminUsersPage() {
 
   const usersQuery = useAdminUsers(params);
   const users = usersQuery.data ?? [];
+  const pagination = useClientPagination(users, { initialPageSize: 10 });
 
   return (
     <div className="space-y-5">
@@ -119,7 +122,7 @@ export function AdminUsersPage() {
               </Table.Head>
 
               <Table.Body>
-                {users.map((user) => (
+                {pagination.items.map((user) => (
                   <Table.Row key={user.id}>
                     <Table.Cell>
                       <div>
@@ -157,7 +160,7 @@ export function AdminUsersPage() {
           </div>
 
           <div className="grid gap-4 xl:hidden">
-            {users.map((user) => (
+            {pagination.items.map((user) => (
               <Card key={user.id}>
                 <CardContent>
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -192,6 +195,22 @@ export function AdminUsersPage() {
             ))}
           </div>
         </>
+      ) : null}
+
+      {!usersQuery.isLoading && !usersQuery.isError && users.length > 0 ? (
+        <Pagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          canPrev={pagination.canPrev}
+          canNext={pagination.canNext}
+          onPrev={pagination.prevPage}
+          onNext={pagination.nextPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
       ) : null}
 
       <UserActionModal

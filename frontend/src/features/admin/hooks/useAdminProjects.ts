@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getAdminProjects, type AdminProjectsQueryParams } from "@/features/admin/api/adminApi";
+import { getAdminProjects } from "@/features/admin/api/adminApi";
+import type { AdminProjectsQueryParams } from "@/features/admin/api/adminTypes";
 import { useAuthStore } from "@/features/auth/model/authStore";
 
 export function useAdminProjects(params?: AdminProjectsQueryParams) {

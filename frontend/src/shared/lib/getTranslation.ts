@@ -1,12 +1,11 @@
-import type { LanguageCode } from "@/shared/types/api";
-
-type TranslationLike = {
+export type TranslationLike = {
   language: string;
+  [key: string]: any;
 };
 
-export function getTranslation<TTranslation extends TranslationLike>(
-  translations: TTranslation[] | undefined,
-  language: LanguageCode,
+export function getTranslation<TTranslation extends TranslationLike = TranslationLike>(
+  translations: TTranslation[] | null | undefined,
+  language: string,
 ): TTranslation | undefined {
   if (!translations?.length) {
     return undefined;

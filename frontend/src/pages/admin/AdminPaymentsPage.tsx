@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import type { AdminPayment } from "@/features/admin/api/adminTypes";
 import { RefundModal } from "@/features/admin/components/RefundModal";
 import { useAdminPayments } from "@/features/admin/hooks/useAdminPayments";
+import { useClientPagination } from "@/shared/hooks/useClientPagination";
 import { formatDate } from "@/shared/lib/formatDate";
 import { formatMoney } from "@/shared/lib/formatMoney";
 import { getHumanLabel, paymentStatusLabels } from "@/shared/lib/statusLabels";
@@ -14,6 +15,7 @@ import {
   ErrorState,
   Input,
   LoadingState,
+  Pagination,
   Select,
   StatusBadge,
   Table,
@@ -40,6 +42,7 @@ export function AdminPaymentsPage() {
 
   const paymentsQuery = useAdminPayments(params);
   const payments = paymentsQuery.data ?? [];
+  const pagination = useClientPagination(payments, { initialPageSize: 10 });
 
   return (
     <div className="space-y-5">
@@ -107,7 +110,7 @@ export function AdminPaymentsPage() {
               </Table.Head>
 
               <Table.Body>
-                {payments.map((payment) => (
+                {pagination.items.map((payment) => (
                   <Table.Row key={payment.id}>
                     <Table.Cell className="font-black">#{payment.id}</Table.Cell>
                     <Table.Cell>#{payment.project_id}</Table.Cell>
@@ -139,7 +142,7 @@ export function AdminPaymentsPage() {
           </div>
 
           <div className="grid gap-4 xl:hidden">
-            {payments.map((payment) => (
+            {pagination.items.map((payment) => (
               <Card key={payment.id}>
                 <CardContent>
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -175,6 +178,22 @@ export function AdminPaymentsPage() {
             ))}
           </div>
         </>
+      ) : null}
+
+      {!paymentsQuery.isLoading && !paymentsQuery.isError && payments.length > 0 ? (
+        <Pagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          canPrev={pagination.canPrev}
+          canNext={pagination.canNext}
+          onPrev={pagination.prevPage}
+          onNext={pagination.nextPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
       ) : null}
 
       <RefundModal

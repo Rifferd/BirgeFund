@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import type { AdminComplaint } from "@/features/admin/api/adminTypes";
 import { ComplaintModerationModal } from "@/features/admin/components/ComplaintModerationModal";
 import { useAdminComplaints } from "@/features/admin/hooks/useAdminComplaints";
+import { useClientPagination } from "@/shared/hooks/useClientPagination";
 import { formatDate } from "@/shared/lib/formatDate";
 import {
   Button,
@@ -15,6 +16,7 @@ import {
   Select,
   StatusBadge,
   Table,
+  Pagination,
 } from "@/shared/ui";
 
 function getComplaintTone(status: string) {
@@ -38,6 +40,7 @@ export function AdminComplaintsPage() {
 
   const complaintsQuery = useAdminComplaints(params);
   const complaints = complaintsQuery.data ?? [];
+  const pagination = useClientPagination(complaints, { initialPageSize: 10 });
 
   return (
     <div className="space-y-5">
@@ -104,7 +107,7 @@ export function AdminComplaintsPage() {
               </Table.Head>
 
               <Table.Body>
-                {complaints.map((complaint) => (
+                {pagination.items.map((complaint) => (
                   <Table.Row key={complaint.id}>
                     <Table.Cell className="font-black">#{complaint.id}</Table.Cell>
                     <Table.Cell>{complaint.project_id ? `#${complaint.project_id}` : "—"}</Table.Cell>
@@ -132,7 +135,7 @@ export function AdminComplaintsPage() {
           </div>
 
           <div className="grid gap-4 xl:hidden">
-            {complaints.map((complaint) => (
+            {pagination.items.map((complaint) => (
               <Card key={complaint.id}>
                 <CardContent>
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -165,6 +168,22 @@ export function AdminComplaintsPage() {
             ))}
           </div>
         </>
+      ) : null}
+
+      {!complaintsQuery.isLoading && !complaintsQuery.isError && complaints.length > 0 ? (
+        <Pagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          canPrev={pagination.canPrev}
+          canNext={pagination.canNext}
+          onPrev={pagination.prevPage}
+          onNext={pagination.nextPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
       ) : null}
 
       <ComplaintModerationModal

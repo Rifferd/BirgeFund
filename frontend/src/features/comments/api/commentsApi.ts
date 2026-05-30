@@ -13,7 +13,7 @@ export async function getProjectComments(projectId: number | string) {
     },
   );
 
-  return normalizeApiList(payload);
+  return normalizeApiList<ProjectComment>(payload);
 }
 
 export function createProjectComment(

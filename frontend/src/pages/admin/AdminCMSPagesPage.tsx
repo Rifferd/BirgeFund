@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { AdminCMSPage } from "@/features/admin/api/adminTypes";
 import { CMSPageModal } from "@/features/admin/components/CMSPageModal";
 import { useAdminCMSPages } from "@/features/admin/hooks/useAdminCMSPages";
+import { useClientPagination } from "@/shared/hooks/useClientPagination";
 import { formatDate } from "@/shared/lib/formatDate";
 import {
   Button,
@@ -13,6 +14,7 @@ import {
   LoadingState,
   StatusBadge,
   Table,
+  Pagination,
 } from "@/shared/ui";
 
 function getPageTitle(page: AdminCMSPage) {
@@ -50,6 +52,7 @@ function getStatusLabel(status: string) {
 export function AdminCMSPagesPage() {
   const pagesQuery = useAdminCMSPages();
   const pages = pagesQuery.data ?? [];
+  const pagination = useClientPagination(pages, { initialPageSize: 10 });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPage, setSelectedPage] = useState<AdminCMSPage | null>(null);
@@ -111,7 +114,7 @@ export function AdminCMSPagesPage() {
               </Table.Head>
 
               <Table.Body>
-                {pages.map((page) => {
+                {pagination.items.map((page) => {
                   const status = getPageStatus(page);
 
                   return (
@@ -125,7 +128,7 @@ export function AdminCMSPagesPage() {
                         </StatusBadge>
                       </Table.Cell>
                       <Table.Cell>
-                        {page.translations.map((item) => item.language).join(", ")}
+                        {page.translations.map((item: { language: string }) => item.language).join(", ")}
                       </Table.Cell>
                       <Table.Cell>{formatDate(page.created_at)}</Table.Cell>
                       <Table.Cell>
@@ -145,7 +148,7 @@ export function AdminCMSPagesPage() {
           </div>
 
           <div className="grid gap-4 xl:hidden">
-            {pages.map((page) => {
+            {pagination.items.map((page) => {
               const status = getPageStatus(page);
 
               return (
@@ -172,7 +175,7 @@ export function AdminCMSPagesPage() {
                     </div>
 
                     <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
-                      Переводы: {page.translations.map((item) => item.language).join(", ")}
+                      Переводы: {page.translations.map((item: { language: string }) => item.language).join(", ")}
                     </p>
                   </CardContent>
                 </Card>
@@ -180,6 +183,22 @@ export function AdminCMSPagesPage() {
             })}
           </div>
         </>
+      ) : null}
+
+      {!pagesQuery.isLoading && !pagesQuery.isError && pages.length > 0 ? (
+        <Pagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          canPrev={pagination.canPrev}
+          canNext={pagination.canNext}
+          onPrev={pagination.prevPage}
+          onNext={pagination.nextPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
       ) : null}
 
       <CMSPageModal

@@ -111,13 +111,12 @@ export type AdminReportStatusUpdateRequest = {
 export type AdminComplaint = {
   id: number;
   reporter_id?: number | null;
-  project_id?: number | null;
+  project_id: number;
   comment_id?: number | null;
-  target_type?: string | null;
-  target_id?: number | null;
   reason?: string | null;
   text?: string | null;
   status: string;
+  moderator_id?: number | null;
   moderator_comment?: string | null;
   created_at?: string;
   updated_at?: string | null;
@@ -135,7 +134,6 @@ export type AdminComplaintStatusUpdateRequest = {
   moderator_comment?: string | null;
 };
 
-
 export type AdminCMSPageTranslation = {
   id?: number;
   page_id?: number;
@@ -143,7 +141,7 @@ export type AdminCMSPageTranslation = {
   title: string;
   content: string;
   meta_title?: string | null;
-  meta_text?: string | null;
+  meta_description?: string | null;
   created_at?: string;
   updated_at?: string | null;
 };
@@ -166,7 +164,7 @@ export type AdminCMSPageCreateRequest = {
     title: string;
     content: string;
     meta_title?: string | null;
-    meta_text?: string | null;
+    meta_description?: string | null;
   }>;
 };
 
@@ -174,7 +172,6 @@ export type AdminCMSPageUpdateRequest = Partial<AdminCMSPageCreateRequest> & {
   status?: string;
   is_published?: boolean;
 };
-
 
 export type AdminBannerTranslation = {
   id?: number;
@@ -221,18 +218,20 @@ export type AdminBannerCreateRequest = {
 
 export type AdminBannerUpdateRequest = Partial<AdminBannerCreateRequest>;
 
-
 export type AdminStaticTranslation = {
   id: number;
   namespace: string;
   key: string;
-  values: {
+  values?: {
     ru?: string;
     kg?: string;
     en?: string;
     [key: string]: string | undefined;
   };
-  text?: string | null;
+  ru?: string;
+  kg?: string;
+  en?: string;
+  description?: string | null;
   created_at?: string;
   updated_at?: string | null;
 };
@@ -250,7 +249,7 @@ export type AdminStaticTranslationCreateRequest = {
     kg: string;
     en: string;
   };
-  text?: string | null;
+  description?: string | null;
 };
 
 export type AdminStaticTranslationUpdateRequest = Partial<AdminStaticTranslationCreateRequest>;

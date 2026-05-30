@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { AdminProject } from "@/features/admin/api/adminTypes";
 import { ProjectModerationModal } from "@/features/admin/components/ProjectModerationModal";
 import { useAdminProjects } from "@/features/admin/hooks/useAdminProjects";
+import { useClientPagination } from "@/shared/hooks/useClientPagination";
 import { formatDate } from "@/shared/lib/formatDate";
 import { formatMoney } from "@/shared/lib/formatMoney";
 import { getTranslation } from "@/shared/lib/getTranslation";
@@ -20,6 +21,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
+  Pagination,
   Select,
   StatusBadge,
   Table,
@@ -57,6 +59,7 @@ export function AdminProjectsPage() {
   });
 
   const projects = projectsQuery.data ?? [];
+  const pagination = useClientPagination(projects, { initialPageSize: 10 });
 
   return (
     <div className="space-y-5">
@@ -115,7 +118,7 @@ export function AdminProjectsPage() {
               </Table.Head>
 
               <Table.Body>
-                {projects.map((project) => {
+                {pagination.items.map((project) => {
                   const translation = getTranslation(project.translations, language);
 
                   return (
@@ -156,7 +159,7 @@ export function AdminProjectsPage() {
           </div>
 
           <div className="grid gap-4 xl:hidden">
-            {projects.map((project) => {
+            {pagination.items.map((project) => {
               const translation = getTranslation(project.translations, language);
 
               return (
@@ -195,6 +198,22 @@ export function AdminProjectsPage() {
             })}
           </div>
         </>
+      ) : null}
+
+      {!projectsQuery.isLoading && !projectsQuery.isError && projects.length > 0 ? (
+        <Pagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          canPrev={pagination.canPrev}
+          canNext={pagination.canNext}
+          onPrev={pagination.prevPage}
+          onNext={pagination.nextPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
       ) : null}
 
       <ProjectModerationModal

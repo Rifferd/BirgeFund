@@ -10,5 +10,5 @@ export async function getCategories() {
     },
   );
 
-  return normalizeApiList(payload);
+  return normalizeApiList<Category>(payload);
 }

@@ -1,9 +1,10 @@
+import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/cn";
 
 type StatusBadgeTone = "emerald" | "amber" | "sky" | "slate" | "red";
 
 type StatusBadgeProps = {
-  children: string;
+  children: ReactNode;
   tone?: StatusBadgeTone;
   className?: string;
 };

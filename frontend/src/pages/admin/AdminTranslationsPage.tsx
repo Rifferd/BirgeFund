@@ -6,6 +6,7 @@ import {
   useSeedAdminTranslations,
 } from "@/features/admin/hooks/useAdminTranslationMutations";
 import { useAdminTranslations } from "@/features/admin/hooks/useAdminTranslations";
+import { useClientPagination } from "@/shared/hooks/useClientPagination";
 import { formatDate } from "@/shared/lib/formatDate";
 import {
   Button,
@@ -17,6 +18,7 @@ import {
   LoadingState,
   StatusBadge,
   Table,
+  Pagination,
 } from "@/shared/ui";
 
 function getTranslationValue(
@@ -56,6 +58,7 @@ export function AdminTranslationsPage() {
 
   const translationsQuery = useAdminTranslations(params);
   const translations = translationsQuery.data ?? [];
+  const pagination = useClientPagination(translations, { initialPageSize: 10 });
 
   function openCreateModal() {
     setSelectedTranslation(null);
@@ -150,7 +153,7 @@ export function AdminTranslationsPage() {
               </Table.Head>
 
               <Table.Body>
-                {translations.map((translation) => (
+                {pagination.items.map((translation) => (
                   <Table.Row key={translation.id}>
                     <Table.Cell className="font-black">#{translation.id}</Table.Cell>
                     <Table.Cell>{translation.namespace}</Table.Cell>
@@ -181,7 +184,7 @@ export function AdminTranslationsPage() {
           </div>
 
           <div className="grid gap-4 xl:hidden">
-            {translations.map((translation) => (
+            {pagination.items.map((translation) => (
               <Card key={translation.id}>
                 <CardContent>
                   <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -212,6 +215,22 @@ export function AdminTranslationsPage() {
             ))}
           </div>
         </>
+      ) : null}
+
+      {!translationsQuery.isLoading && !translationsQuery.isError && translations.length > 0 ? (
+        <Pagination
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          startIndex={pagination.startIndex}
+          endIndex={pagination.endIndex}
+          canPrev={pagination.canPrev}
+          canNext={pagination.canNext}
+          onPrev={pagination.prevPage}
+          onNext={pagination.nextPage}
+          onPageSizeChange={pagination.setPageSize}
+        />
       ) : null}
 
       <TranslationModal
