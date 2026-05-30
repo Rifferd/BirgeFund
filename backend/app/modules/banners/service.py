@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import BadRequestException, ConflictException, NotFoundException
 from app.modules.audit.service import AuditLogService
@@ -11,37 +11,37 @@ from app.shared.enums import BannerPlacement
 
 
 class BannerService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.banners = BannerRepository(db)
         self.files = FileRepository(db)
         self.audit = AuditLogService(db)
 
-    def list_public(self, placement: BannerPlacement | None = None) -> list[Banner]:
-        return self.banners.list_public(placement=placement)
+    async def list_public(self, placement: BannerPlacement | None = None) -> list[Banner]:
+        return await self.banners.list_public(placement=placement)
 
-    def list_all(self) -> list[Banner]:
-        return self.banners.list_all()
+    async def list_all(self) -> list[Banner]:
+        return await self.banners.list_all()
 
-    def get_by_id(self, banner_id: int) -> Banner:
-        banner = self.banners.get_by_id(banner_id)
+    async def get_by_id(self, banner_id: int) -> Banner:
+        banner = await self.banners.get_by_id(banner_id)
 
         if banner is None:
             raise NotFoundException("Баннер не найден")
 
         return banner
 
-    def create(self, *, data: BannerCreate, current_user: User) -> Banner:
-        if self.banners.get_by_slug(data.slug) is not None:
+    async def create(self, *, data: BannerCreate, current_user: User) -> Banner:
+        if await self.banners.get_by_slug(data.slug) is not None:
             raise ConflictException("Баннер с таким slug уже существует")
 
         self._validate_translations(data.translations)
         self._validate_date_range(data.starts_at, data.ends_at)
-        self._validate_image_file(data.image_file_id)
+        await self._validate_image_file(data.image_file_id)
 
-        banner = self.banners.create(data)
+        banner = await self.banners.create(data)
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action="cms.banner_created",
             entity_type="banner",
             entity_id=banner.id,
@@ -53,13 +53,13 @@ class BannerService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(banner)
+        await self.db.commit()
+        await self.db.refresh(banner)
 
         return banner
 
-    def update(self, *, banner_id: int, data: BannerUpdate, current_user: User) -> Banner:
-        banner = self.get_by_id(banner_id)
+    async def update(self, *, banner_id: int, data: BannerUpdate, current_user: User) -> Banner:
+        banner = await self.get_by_id(banner_id)
 
         old_values = {
             "slug": banner.slug,
@@ -69,7 +69,7 @@ class BannerService:
         }
 
         if data.slug is not None:
-            existing_banner = self.banners.get_by_slug(data.slug)
+            existing_banner = await self.banners.get_by_slug(data.slug)
             if existing_banner is not None and existing_banner.id != banner.id:
                 raise ConflictException("Баннер с таким slug уже существует")
 
@@ -79,11 +79,11 @@ class BannerService:
         self._validate_date_range(data.starts_at, data.ends_at)
 
         if data.image_file_id is not None:
-            self._validate_image_file(data.image_file_id)
+            await self._validate_image_file(data.image_file_id)
 
-        banner = self.banners.update(banner, data)
+        banner = await self.banners.update(banner, data)
 
-        self.audit.create_log(
+        await self.audit.create_log(
             action="cms.banner_updated",
             entity_type="banner",
             entity_id=banner.id,
@@ -97,8 +97,8 @@ class BannerService:
             },
         )
 
-        self.db.commit()
-        self.db.refresh(banner)
+        await self.db.commit()
+        await self.db.refresh(banner)
 
         return banner
 
@@ -115,11 +115,11 @@ class BannerService:
         if starts_at is not None and ends_at is not None and starts_at >= ends_at:
             raise BadRequestException("Дата начала должна быть раньше даты окончания")
 
-    def _validate_image_file(self, image_file_id: int | None) -> None:
+    async def _validate_image_file(self, image_file_id: int | None) -> None:
         if image_file_id is None:
             return
 
-        file = self.files.get_by_id(image_file_id)
+        file = await self.files.get_by_id(image_file_id)
 
         if file is None:
             raise BadRequestException("Файл изображения не найден")

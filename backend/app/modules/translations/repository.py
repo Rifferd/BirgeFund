@@ -1,33 +1,40 @@
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.translations.model import StaticTranslation
 from app.modules.translations.schema import StaticTranslationCreate, StaticTranslationUpdate
 
 
 class StaticTranslationRepository:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    def get_by_id(self, translation_id: int) -> StaticTranslation | None:
+    async def get_by_id(self, translation_id: int) -> StaticTranslation | None:
         statement = select(StaticTranslation).where(StaticTranslation.id == translation_id)
-        return self.db.scalar(statement)
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()
 
-    def get_by_namespace_and_key(self, namespace: str, key: str) -> StaticTranslation | None:
+    async def get_by_namespace_and_key(
+        self,
+        namespace: str,
+        key: str,
+    ) -> StaticTranslation | None:
         statement = select(StaticTranslation).where(
             StaticTranslation.namespace == namespace,
             StaticTranslation.key == key,
         )
-        return self.db.scalar(statement)
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()
 
-    def list_all(self) -> list[StaticTranslation]:
+    async def list_all(self) -> list[StaticTranslation]:
         statement = select(StaticTranslation).order_by(
             StaticTranslation.namespace.asc(),
             StaticTranslation.key.asc(),
         )
-        return list(self.db.scalars(statement).all())
+        result = await self.db.execute(statement)
+        return list(result.scalars().all())
 
-    def list_active(self, namespace: str | None = None) -> list[StaticTranslation]:
+    async def list_active(self, namespace: str | None = None) -> list[StaticTranslation]:
         statement = select(StaticTranslation).where(StaticTranslation.is_active.is_(True))
 
         if namespace is not None:
@@ -38,18 +45,19 @@ class StaticTranslationRepository:
             StaticTranslation.key.asc(),
         )
 
-        return list(self.db.scalars(statement).all())
+        result = await self.db.execute(statement)
+        return list(result.scalars().all())
 
-    def create(self, data: StaticTranslationCreate) -> StaticTranslation:
+    async def create(self, data: StaticTranslationCreate) -> StaticTranslation:
         translation = StaticTranslation(**data.model_dump())
 
         self.db.add(translation)
-        self.db.flush()
-        self.db.refresh(translation)
+        await self.db.flush()
+        await self.db.refresh(translation)
 
         return translation
 
-    def update(
+    async def update(
         self,
         translation: StaticTranslation,
         data: StaticTranslationUpdate,
@@ -60,7 +68,7 @@ class StaticTranslationRepository:
             setattr(translation, field, value)
 
         self.db.add(translation)
-        self.db.flush()
-        self.db.refresh(translation)
+        await self.db.flush()
+        await self.db.refresh(translation)
 
         return translation

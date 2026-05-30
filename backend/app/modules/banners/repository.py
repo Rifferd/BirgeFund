@@ -1,7 +1,8 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.modules.banners.model import Banner, BannerTranslation
 from app.modules.banners.schema import BannerCreate, BannerUpdate
@@ -9,28 +10,50 @@ from app.shared.enums import BannerPlacement
 
 
 class BannerRepository:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    def get_by_id(self, banner_id: int) -> Banner | None:
-        statement = select(Banner).where(Banner.id == banner_id)
-        return self.db.scalar(statement)
+    def _options(self):
+        return (selectinload(Banner.translations),)
 
-    def get_by_slug(self, slug: str) -> Banner | None:
-        statement = select(Banner).where(Banner.slug == slug)
-        return self.db.scalar(statement)
+    async def get_by_id(self, banner_id: int) -> Banner | None:
+        statement = (
+            select(Banner)
+            .options(*self._options())
+            .where(Banner.id == banner_id)
+        )
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()
 
-    def list_all(self) -> list[Banner]:
-        statement = select(Banner).order_by(Banner.created_at.desc(), Banner.id.desc())
-        return list(self.db.scalars(statement).all())
+    async def get_by_slug(self, slug: str) -> Banner | None:
+        statement = (
+            select(Banner)
+            .options(*self._options())
+            .where(Banner.slug == slug)
+        )
+        result = await self.db.execute(statement)
+        return result.scalar_one_or_none()
 
-    def list_public(self, placement: BannerPlacement | None = None) -> list[Banner]:
+    async def list_all(self) -> list[Banner]:
+        statement = (
+            select(Banner)
+            .options(*self._options())
+            .order_by(Banner.created_at.desc(), Banner.id.desc())
+        )
+        result = await self.db.execute(statement)
+        return list(result.scalars().unique().all())
+
+    async def list_public(self, placement: BannerPlacement | None = None) -> list[Banner]:
         now = datetime.now(UTC)
 
-        statement = select(Banner).where(
-            Banner.is_active.is_(True),
-            or_(Banner.starts_at.is_(None), Banner.starts_at <= now),
-            or_(Banner.ends_at.is_(None), Banner.ends_at >= now),
+        statement = (
+            select(Banner)
+            .options(*self._options())
+            .where(
+                Banner.is_active.is_(True),
+                or_(Banner.starts_at.is_(None), Banner.starts_at <= now),
+                or_(Banner.ends_at.is_(None), Banner.ends_at >= now),
+            )
         )
 
         if placement is not None:
@@ -38,9 +61,10 @@ class BannerRepository:
 
         statement = statement.order_by(Banner.sort_order.asc(), Banner.id.desc())
 
-        return list(self.db.scalars(statement).all())
+        result = await self.db.execute(statement)
+        return list(result.scalars().unique().all())
 
-    def create(self, data: BannerCreate) -> Banner:
+    async def create(self, data: BannerCreate) -> Banner:
         banner = Banner(
             slug=data.slug,
             placement=data.placement,
@@ -58,12 +82,12 @@ class BannerRepository:
         ]
 
         self.db.add(banner)
-        self.db.flush()
-        self.db.refresh(banner)
+        await self.db.flush()
+        await self.db.refresh(banner)
 
         return banner
 
-    def update(self, banner: Banner, data: BannerUpdate) -> Banner:
+    async def update(self, banner: Banner, data: BannerUpdate) -> Banner:
         update_data = data.model_dump(exclude_unset=True, exclude={"translations"})
 
         for field, value in update_data.items():
@@ -71,7 +95,7 @@ class BannerRepository:
 
         if data.translations is not None:
             banner.translations.clear()
-            self.db.flush()
+            await self.db.flush()
 
             banner.translations = [
                 BannerTranslation(**translation.model_dump())
@@ -79,7 +103,7 @@ class BannerRepository:
             ]
 
         self.db.add(banner)
-        self.db.flush()
-        self.db.refresh(banner)
+        await self.db.flush()
+        await self.db.refresh(banner)
 
         return banner

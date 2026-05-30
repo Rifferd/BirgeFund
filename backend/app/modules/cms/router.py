@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_database_session
 from app.modules.cms.schema import CMSPageRead
@@ -9,17 +9,17 @@ router = APIRouter(prefix="/cms", tags=["cms"])
 
 
 @router.get("/pages", response_model=list[CMSPageRead])
-def list_public_cms_pages(
-    db: Session = Depends(get_database_session),
+async def list_public_cms_pages(
+    db: AsyncSession = Depends(get_database_session),
 ) -> list[CMSPageRead]:
     service = CMSPageService(db)
-    return service.list_published()
+    return await service.list_published()
 
 
 @router.get("/pages/{slug}", response_model=CMSPageRead)
-def get_public_cms_page(
+async def get_public_cms_page(
     slug: str,
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> CMSPageRead:
     service = CMSPageService(db)
-    return service.get_public_by_slug(slug)
+    return await service.get_public_by_slug(slug)
