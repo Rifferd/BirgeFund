@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictException, UnauthorizedException
 from app.core.security import (
@@ -17,7 +17,7 @@ from app.modules.users.schema import UserCreate
 
 
 class AuthService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.users = UserRepository(db)
         self.refresh_tokens = RefreshTokenRepository(db)
@@ -28,24 +28,24 @@ class AuthService:
     def verify_password(self, plain_password: str, password_hash: str) -> bool:
         return verify_password(plain_password, password_hash)
 
-    def register(self, data: UserCreate) -> User:
-        if self.users.exists_by_email(data.email):
+    async def register(self, data: UserCreate) -> User:
+        if await self.users.exists_by_email(data.email):
             raise ConflictException("Пользователь с таким email уже существует")
 
-        user = self.users.create(
+        user = await self.users.create(
             email=data.email,
             password_hash=self.get_password_hash(data.password),
             full_name=data.full_name,
             preferred_language=data.preferred_language,
         )
 
-        self.db.commit()
-        self.db.refresh(user)
+        await self.db.commit()
+        await self.db.refresh(user)
 
         return user
 
-    def authenticate(self, email: str, password: str) -> User:
-        user = self.users.get_by_email(email)
+    async def authenticate(self, email: str, password: str) -> User:
+        user = await self.users.get_by_email(email)
 
         if user is None:
             raise UnauthorizedException()
@@ -56,35 +56,35 @@ class AuthService:
         if not user.is_active or user.is_blocked:
             raise UnauthorizedException("Пользователь заблокирован или неактивен")
 
-        user = self.users.update_last_login(user)
+        user = await self.users.update_last_login(user)
 
-        self.db.commit()
-        self.db.refresh(user)
+        await self.db.commit()
+        await self.db.refresh(user)
 
         return user
 
-    def create_token_pair(self, user: User) -> TokenResponse:
+    async def create_token_pair(self, user: User) -> TokenResponse:
         access_token = create_access_token(user.id)
         refresh_token, refresh_expires_at = create_refresh_token(user.id)
 
-        self.refresh_tokens.create(
+        await self.refresh_tokens.create(
             user_id=user.id,
             token_hash=hash_token(refresh_token),
             expires_at=refresh_expires_at,
         )
 
-        self.db.commit()
+        await self.db.commit()
 
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
         )
 
-    def login(self, email: str, password: str) -> TokenResponse:
-        user = self.authenticate(email=email, password=password)
-        return self.create_token_pair(user)
+    async def login(self, email: str, password: str) -> TokenResponse:
+        user = await self.authenticate(email=email, password=password)
+        return await self.create_token_pair(user)
 
-    def refresh(self, refresh_token: str) -> TokenResponse:
+    async def refresh(self, refresh_token: str) -> TokenResponse:
         try:
             payload = decode_token(refresh_token)
         except ValueError:
@@ -97,14 +97,14 @@ class AuthService:
         if user_id is None:
             raise UnauthorizedException("Невалидный refresh token")
 
-        stored_token = self.refresh_tokens.get_active_by_hash(hash_token(refresh_token))
+        stored_token = await self.refresh_tokens.get_active_by_hash(hash_token(refresh_token))
         if stored_token is None:
             raise UnauthorizedException("Refresh token недействителен или истёк")
 
-        user = self.users.get_by_id(int(user_id))
+        user = await self.users.get_by_id(int(user_id))
         if user is None or not user.is_active or user.is_blocked:
             raise UnauthorizedException("Пользователь заблокирован или неактивен")
 
-        self.refresh_tokens.revoke(stored_token)
+        await self.refresh_tokens.revoke(stored_token)
 
-        return self.create_token_pair(user)
+        return await self.create_token_pair(user)

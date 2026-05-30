@@ -1,13 +1,12 @@
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_database_session
+from app.core.rate_limit import LoginRateLimiter
 from app.modules.auth.schema import LoginRequest, RefreshRequest, RegisterRequest, TokenResponse
 from app.modules.auth.service import AuthService
 from app.modules.users.model import User
 from app.modules.users.schema import UserCreate, UserRead
-from app.core.rate_limit import LoginRateLimiter
 from app.shared.schemas import MessageResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -18,12 +17,12 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
 )
-def register(
+async def register(
     payload: RegisterRequest,
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> UserRead:
     service = AuthService(db)
-    user = service.register(
+    user = await service.register(
         UserCreate(
             email=payload.email,
             password=payload.password,
@@ -36,10 +35,10 @@ def register(
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(
+async def login(
     payload: LoginRequest,
     request: Request,
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> TokenResponse:
     limiter = LoginRateLimiter()
 
@@ -52,7 +51,7 @@ def login(
     service = AuthService(db)
 
     try:
-        result = service.login(payload.email, payload.password)
+        result = await service.login(payload.email, payload.password)
     except Exception as exc:
         if exc.__class__.__name__ in {"UnauthorizedException", "PermissionDeniedException"}:
             limiter.hit(rate_limit_identifier)
@@ -64,21 +63,21 @@ def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-def refresh(
+async def refresh(
     payload: RefreshRequest,
-    db: Session = Depends(get_database_session),
+    db: AsyncSession = Depends(get_database_session),
 ) -> TokenResponse:
     service = AuthService(db)
-    return service.refresh(payload.refresh_token)
+    return await service.refresh(payload.refresh_token)
 
 
 @router.get("/me", response_model=UserRead)
-def me(current_user: User = Depends(get_current_user)) -> User:
+async def me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
 @router.post("/logout", response_model=MessageResponse)
-def logout(
+async def logout(
     current_user: User = Depends(get_current_user),
 ) -> MessageResponse:
     return MessageResponse(message="Вы успешно вышли из аккаунта")
