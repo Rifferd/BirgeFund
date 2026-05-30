@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import { HomeBanners } from "@/features/banners/components/HomeBanners";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useHealth } from "@/features/health/hooks/useHealth";
 import { useProjects } from "@/features/projects/hooks/useProjects";
@@ -100,6 +101,8 @@ export function HomePage() {
           </CardContent>
         </Card>
       </section>
+
+      <HomeBanners language={language} />
 
       <section className="mx-auto max-w-7xl px-5 pb-12">
         <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">

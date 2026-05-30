@@ -1,12 +1,35 @@
 import { createBrowserRouter } from "react-router-dom";
 
+import { ProtectedRoute } from "@/features/auth/components/ProtectedRoute";
+
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { PublicLayout } from "@/layouts/PublicLayout";
-import { ProtectedRoute } from "@/features/auth/components/ProtectedRoute";
+
+import { ErrorPage } from "@/pages/ErrorPage";
+
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
+
+import { HomePage } from "@/pages/public/HomePage";
+import { ProjectsPage } from "@/pages/public/ProjectsPage";
+import { ProjectDetailPage } from "@/pages/public/ProjectDetailPage";
+import { SupportProjectPage } from "@/pages/public/SupportProjectPage";
+import { CMSPage } from "@/pages/public/CMSPage";
+
+import { DashboardHomePage } from "@/pages/dashboard/DashboardHomePage";
+import { ProfilePage } from "@/pages/dashboard/ProfilePage";
+import { MySupportsPage } from "@/pages/dashboard/MySupportsPage";
+import { TransactionsPage } from "@/pages/dashboard/TransactionsPage";
+import { NotificationsPage } from "@/pages/dashboard/NotificationsPage";
+import { SettingsPage } from "@/pages/dashboard/SettingsPage";
+
+import { AuthorHomePage } from "@/pages/author/AuthorHomePage";
+import { AuthorProjectsPage } from "@/pages/author/AuthorProjectsPage";
+import { CreateProjectPage } from "@/pages/author/CreateProjectPage";
+
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
+import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminProjectsPage } from "@/pages/admin/AdminProjectsPage";
 import { AdminPaymentsPage } from "@/pages/admin/AdminPaymentsPage";
 import { AdminLedgerPage } from "@/pages/admin/AdminLedgerPage";
@@ -16,57 +39,53 @@ import { AdminComplaintsPage } from "@/pages/admin/AdminComplaintsPage";
 import { AdminCMSPagesPage } from "@/pages/admin/AdminCMSPagesPage";
 import { AdminBannersPage } from "@/pages/admin/AdminBannersPage";
 import { AdminTranslationsPage } from "@/pages/admin/AdminTranslationsPage";
-import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
-import { AuthorHomePage } from "@/pages/author/AuthorHomePage";
-import { AuthorProjectsPage } from "@/pages/author/AuthorProjectsPage";
-import { CreateProjectPage } from "@/pages/author/CreateProjectPage";
-import { DashboardHomePage } from "@/pages/dashboard/DashboardHomePage";
-import { MySupportsPage } from "@/pages/dashboard/MySupportsPage";
-import { NotificationsPage } from "@/pages/dashboard/NotificationsPage";
-import { ProfilePage } from "@/pages/dashboard/ProfilePage";
-import { SettingsPage } from "@/pages/dashboard/SettingsPage";
-import { TransactionsPage } from "@/pages/dashboard/TransactionsPage";
 
-import { HomePage } from "@/pages/public/HomePage";
-import { ProjectDetailPage } from "@/pages/public/ProjectDetailPage";
-import { ProjectsPage } from "@/pages/public/ProjectsPage";
-import { SupportProjectPage } from "@/pages/public/SupportProjectPage";
 import { routes } from "@/shared/config/routes";
 
 export const router = createBrowserRouter([
   {
     path: routes.home,
     element: <PublicLayout />,
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
         element: <HomePage />,
       },
       {
-        path: routes.projects,
+        path: "projects",
         element: <ProjectsPage />,
       },
       {
-        path: routes.supportProject,
+        path: "projects/:slug/support",
         element: <SupportProjectPage />,
       },
       {
-        path: routes.projectDetail,
+        path: "projects/:slug",
         element: <ProjectDetailPage />,
       },
       {
-        path: routes.login,
+        path: "login",
         element: <LoginPage />,
       },
       {
-        path: routes.register,
+        path: "register",
         element: <RegisterPage />,
+      },
+      {
+        path: "pages/:slug",
+        element: <CMSPage />,
       },
     ],
   },
   {
-    path: routes.dashboard,
-    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+    path: "dashboard",
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
@@ -95,8 +114,13 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: routes.author,
-    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+    path: "author",
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
@@ -113,8 +137,13 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: routes.admin,
-    element: <ProtectedRoute><AdminLayout /></ProtectedRoute>,
+    path: "admin",
+    element: (
+      <ProtectedRoute>
+        <AdminLayout />
+      </ProtectedRoute>
+    ),
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,

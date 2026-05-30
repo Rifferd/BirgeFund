@@ -13,6 +13,7 @@ import { Button, LanguageSwitcher, TestModeBanner } from "@/shared/ui";
 const navItems = [
   { to: routes.home, labelKey: "navigation.home" },
   { to: routes.projects, labelKey: "navigation.projects" },
+  { to: "/pages/test-mode", labelKey: "testMode.title" },
 ];
 
 export function PublicLayout() {
