@@ -4,6 +4,9 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { CommentSection } from "@/features/comments/components/CommentSection";
+import { ProjectReportsSection } from "@/features/project-reports/components/ProjectReportsSection";
+import { ProjectUpdatesSection } from "@/features/project-updates/components/ProjectUpdatesSection";
+import { ProjectRewardsSection } from "@/features/rewards/components/ProjectRewardsSection";
 import { ComplaintModal } from "@/features/complaints/components/ComplaintModal";
 import { useAuthStore } from "@/features/auth/model/authStore";
 import { ProjectFundingCard } from "@/features/projects/components/ProjectFundingCard";
@@ -115,6 +118,16 @@ export function ProjectDetailPage() {
             </p>
           </CardContent>
         </Card>
+
+        <ProjectRewardsSection
+          projectId={project.id}
+          projectSlug={project.slug}
+          currency={project.currency}
+        />
+
+        <ProjectUpdatesSection projectId={project.id} />
+
+        <ProjectReportsSection projectId={project.id} />
 
         <div className="grid gap-5 md:grid-cols-2">
           <Card>
